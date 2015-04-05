@@ -18,6 +18,7 @@ class DoorManager;
 class LoadManager;
 class ObjectManager;
 class SoundManager;
+class PlatformManager;
 
 extern bool unlock1;
 extern bool unlock2;
@@ -30,6 +31,7 @@ extern DoorManager doorManager;
 extern LoadManager loadManager;
 extern ObjectManager objectManager;
 extern SoundManager soundManager;
+extern PlatformManager platformManager;
 
 extern Level* currentLevel;
 extern int currentWorldIndex;

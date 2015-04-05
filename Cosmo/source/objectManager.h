@@ -18,6 +18,8 @@ public:
 	void render(int x, int y, int level, int world);
 	void interact(SDL_Rect mBox, int level, int world, bool action);
 	int triggerWorld();
+
+	int findStaticCollisions(SDL_Rect box, int level, int world, int delta, int direction);
 	
 	bool useKey();
 

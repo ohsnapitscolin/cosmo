@@ -170,6 +170,9 @@ void World::unload()
 	if (mTileSet != NULL) {
 		mTileSet->free();
 	}
+	if (mPlatformSet != NULL) {
+		mPlatformSet->free();
+	}
 	if (mGridTexture != NULL) {
 		mGridTexture->free();
 	}
@@ -191,6 +194,11 @@ void World::free()
 		mTileSet->free();
 		delete mTileSet;
 		mTileSet = NULL;
+	}
+	if (mPlatformSet != NULL) {
+		mPlatformSet->free();
+		delete mPlatformSet;
+		mPlatformSet = NULL;
 	}
 	if (mGridTexture != NULL) {
 		mGridTexture->free();

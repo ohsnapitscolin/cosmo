@@ -1,7 +1,3 @@
-/*This source code copyrighted by Lazy Foo' Productions (2004-2014)
-and may not be redistributed without written permission.*/
-
-//Using SDL, SDL_image, standard IO, strings, and file streams
 #include <SDL.h>
 //#include <vld.h>
 #include <SDL_image.h>
@@ -24,6 +20,7 @@ and may not be redistributed without written permission.*/
 #include "objectManager.h"
 #include "doorManager.h"
 #include "soundManager.h"
+#include "platformManager.h"
 #include <time.h>
 #include <SDL_thread.h>
 
@@ -50,6 +47,7 @@ void close();
 enum { EXIT, LOAD, ENTER };
 LWindow gWindow;
 Character* character;
+Menu* menu;
 
 LTexture loadingSprite;
 
@@ -147,6 +145,12 @@ bool loadMedia()
 		success = false;
 	}
 
+	if (!platformManager.loadMedia()) {
+		printf("Unable to load platforms!\n");
+		success = false;
+	}
+
+
 	if (!loadingSprite.loadFromFile("resources/loading.png")) {
 		success = false;
 	}
@@ -183,7 +187,7 @@ int main(int argc, char* args[])
 			SDL_Point charStart = currentLevel->getCharacterStart();
 			character->setPosition(charStart.x, charStart.y);
 
-			Menu* menu = new Menu("resources/screen3.png");
+			menu = new Menu("resources/screen3.png");
 			menu->loadMedia();
 			int next = menu->start();
 
@@ -194,10 +198,12 @@ int main(int argc, char* args[])
 				return 1;
 			}
 
-			if (next == 1) {
-				SDL_Rect charBox = loadManager.load();
-				character->setPosition(charBox.x, charBox.y);
-			}
+			/*if (next == 1) {
+				loadManager.freeLevels();
+				//break;
+				//SDL_Rect charBox = loadManager.load();
+				//character->setPosition(charBox.x, charBox.y);
+			}*/
 
 			int resetFade = 0;
 			int reset = NONE;
@@ -393,6 +399,7 @@ int main(int argc, char* args[])
 					if (!loadManager.isPreloaded(currentLevel)) {
 						SDL_Thread* threadID = SDL_CreateThread(threadFunction, "LoadingThread", (void*)data);
 						runLoadingScreen();
+						//loadManager.loadLevel(currentLevel, true);
 						SDL_WaitThread(threadID, NULL);
 					}
 					//bool startLoadingScreen();
@@ -583,7 +590,11 @@ void close()
 	currentLevel = NULL;
 
 	loadManager.freeCharacterSprites();
+	loadManager.freeSlopes();
 	delete character;
+
+	menu->free();
+	delete menu;
 
 	doorManager.free();
 	soundManager.free();

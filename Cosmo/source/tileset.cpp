@@ -4,7 +4,7 @@
 #include "slope.h"
 #include "loadManager.h"
 
-TileSet::TileSet(std::string mapName)
+TileSet::TileSet(std::string mapName) 
 {
 	mMapName = mapName;
 }
@@ -42,6 +42,8 @@ int TileSet::getHeight()
 
 bool TileSet::setTiles()
 {
+	printf("SET %s\n", mMapName.c_str());
+
 	//Success flag
 	bool tilesLoaded = true;
 
@@ -53,8 +55,15 @@ bool TileSet::setTiles()
 	int tileCount;
 	map >> tileCount;
 
-	for (int i = 0; i < tileCount; i++)
-	{
+	/*for (int i = 0; i < mTileSetHeight / TILE_SIZE; i++) {
+		for (int j = 0; j < mTileSetWidth / TILE_SIZE; j++) {
+			if (mTiles[i][j] != NULL) {
+				printf("WHOA %d %d\n", i, j);
+			}
+		}
+	}*/
+
+	for (int i = 0; i < tileCount; i++) {
 		//determines what kind of tile will be made
 		int x, y, width, height, tileType;
 
@@ -65,14 +74,8 @@ bool TileSet::setTiles()
 		map >> width;
 		map >> height;
 
-		int doorIndex;
-		if (tileType == 32) {
-			map >> doorIndex;
-		}
-
 		//if the was a problem in reading the map
-		if (map.fail())
-		{
+		if (map.fail()) {
 			//stop loading map
 			printf("Error loading map: Unexpected end of file!\n");
 			tilesLoaded = false;
@@ -80,14 +83,11 @@ bool TileSet::setTiles()
 		}
 
 		int tile_y = y;
-		for (int i = y / TILE_SIZE; i < (y + height) / TILE_SIZE && i < mTileSetHeight / TILE_SIZE; i++)
-		{
+		for (int i = y / TILE_SIZE; i < (y + height) / TILE_SIZE && i < mTileSetHeight / TILE_SIZE; i++) {
 			int tile_x = x;
-			for (int j = x / TILE_SIZE; j < (x + width) / TILE_SIZE && j < mTileSetWidth / TILE_SIZE; j++)
-			{
-				mTiles[i][j] = new Tile(tile_x, tile_y, tileType);
-				if (tileType == 32) {
-					mTiles[i][j]->setDoorIndex(doorIndex);
+			for (int j = x / TILE_SIZE; j < (x + width) / TILE_SIZE && j < mTileSetWidth / TILE_SIZE; j++) {
+				if (mTiles[i][j] == NULL) {
+					mTiles[i][j] = new Tile(tile_x, tile_y, tileType);
 				}
 				tile_x += TILE_SIZE;
 			}
@@ -386,12 +386,17 @@ void TileSet::findOverlapTiles(SDL_Rect box, vector<Tile*>& overlapTiles)
 }
 
 /* DEFINITELY OBJECTS BEING LOST WHEN PASSED TO CHARACTER */
-void TileSet::free() {
+void TileSet::free() 
+{
 	for (int i = 0; i < mTileSetHeight / TILE_SIZE; i++) {
 		for (int j = 0; j < mTileSetWidth / TILE_SIZE; j++) {
-			delete mTiles[i][j];
+			if (mTiles[i][j] != NULL) {
+				delete mTiles[i][j];
+				mTiles[i][j] = NULL;
+			}
 		}
 	}
+
 	mTileSetWidth = 0;
 	mTileSetHeight = 0;
 }

@@ -424,8 +424,11 @@ void LoadManager::freeCharacterSprites()
 	for (int i = 0; i < int(mCharacterSprites.size()); i++) {
 		if (!mCharacterSprites[i].empty()) {
 			for (int j = 0; j < int(mCharacterSprites[i].size()); j++) {
-				mCharacterSprites[i][j]->free();
-				mCharacterSprites[i][j] = NULL;
+				if (mCharacterSprites[i][j] != NULL) {
+					mCharacterSprites[i][j]->free();
+					delete mCharacterSprites[i][j];
+					mCharacterSprites[i][j] = NULL;
+				}
 			}
 		}
 	}
@@ -657,4 +660,13 @@ bool LoadManager::isPreloaded(Level* level)
 		}
 	}
 	return false;
+}
+
+void LoadManager::freeSlopes() {
+	for (int i = 0; i < NUM_SLOPES; i++) {
+		if (mSlopes[i] != NULL) {
+			delete mSlopes[i];
+			mSlopes[i] = NULL;
+		}
+	}
 }

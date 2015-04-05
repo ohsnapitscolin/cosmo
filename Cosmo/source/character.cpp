@@ -248,6 +248,8 @@ void Character::move(SDL_Rect& camera)
 			deltaX = distanceX;
 		}
 
+		deltaX = objectManager.findStaticCollisions(mBox, currentLevel->getLevelNumber(), currentWorldIndex, deltaX, dirVelX);
+
 		if (dirVelX == LEFT) {
 			mBox.x -= deltaX;
 		}
@@ -318,6 +320,13 @@ void Character::move(SDL_Rect& camera)
 			}
 			deltaY = distanceY;
 		}
+
+		
+		int new_deltaY = objectManager.findStaticCollisions(mBox, currentLevel->getLevelNumber(), currentWorldIndex, deltaY, dirVelY);
+		if (deltaY != new_deltaY && new_deltaY == 0) {
+			mCharState = STANDING;
+		}
+		deltaY = new_deltaY;
 	}
 	
 	if (mCurrentPlatform != NONE) {
@@ -373,8 +382,7 @@ void Character::checkForOverlaps()
 {
 	World* currentWorld = currentLevel->getWorld(currentWorldIndex);
 	TileSet* currentTileSet = currentWorld->getTileSet();
-	
-	objectManager.interact(mBox, currentLevel->getLevelNumber(), currentWorldIndex, false);
+
 	int dirVelY = mVelY < 0 ? UP : mVelY > 0 ? DOWN : NONE;
 
 	vector<Tile*> overlapTiles;

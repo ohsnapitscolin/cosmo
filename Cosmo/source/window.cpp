@@ -31,7 +31,7 @@ bool LWindow::init()
 		return 1;
 	}
 
-	bool windowed = false;
+	bool windowed = true;
 
 	int windowWidth = 1200;
 	int windowHeight = 900;

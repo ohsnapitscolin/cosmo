@@ -40,6 +40,7 @@ public:
 	LTexture* getFadeScreen();
 
 	void loadNeighbors();
+	void freeSlopes();
 
 	Slope* getCurrentSlope(int type);
 

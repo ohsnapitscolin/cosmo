@@ -8,7 +8,7 @@ class Platform
 {
 public:
 	//Initializes position and type
-	Platform(int x, int y, int w, int h, int tileType);
+	Platform(int x, int y, int tileType, int PlatformType);
 
 	bool loadMedia();
 
@@ -33,7 +33,7 @@ private:
 	//The attributes of the tile
 	SDL_Rect mBox;
 
-	LTexture mPlatformTexture;
+	LTexture* mPlatformTexture;
 
 	//The tile type
 	int mType;

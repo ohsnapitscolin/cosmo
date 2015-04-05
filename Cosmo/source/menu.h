@@ -10,6 +10,9 @@ class Menu
 {
 public:
 	Menu(std::string textureName);
+	~Menu();
+	void free();
+
 	bool loadMedia();
 	int start();
 

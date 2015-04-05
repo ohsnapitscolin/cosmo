@@ -5,6 +5,10 @@ PlatformSet::PlatformSet(std::string filename) {
 	mFilename = filename;
 }
 
+PlatformSet::~PlatformSet() {
+	void free();
+}
+
 bool PlatformSet::loadPlatforms() {
 
 	//Success flag
@@ -29,33 +33,30 @@ bool PlatformSet::loadPlatforms() {
 	for (int i = 0; i < mPlatformCount; i++)
 	{
 		//Determines what kind of Block will be made
-		int x, y, width, height, tileType;
+		int x, y, tileType, platformType;
 		int start, end, direction, speed;
 
 		//Read Block from map file
 		map >> tileType;
+		map >> platformType;
 		map >> x;
 		map >> y;
-		map >> width;
-		map >> height;
-
+		
 		map >> start;
 		map >> end;
 		map >> direction;
 		map >> speed;
 
 		//If the was a problem in reading the map
-		if (map.fail())
-		{
+		if (map.fail()) {
 			//Stop loading map
 			printf("Error loading map: Unexpected end of file!\n");
 			platformsLoaded = false;
 			break;
 		}
 
-		mPlatforms[i] = new Platform(x, y, width, height, tileType);
+		mPlatforms[i] = new Platform(x, y, tileType, platformType);
 		mPlatforms[i]->setMotion(start, end, direction, speed);
-		mPlatforms[i]->loadMedia();
 	}
 
 	//Close the file
@@ -116,13 +117,22 @@ void PlatformSet::render(SDL_Rect& camera) {
 }
 
 void PlatformSet::setAlpha(int alpha) {
-	for (int i = 0; i < int(mPlatforms.size()); i++) {
+	/*for (int i = 0; i < int(mPlatforms.size()); i++) {
 		mPlatforms[i]->setAlpha(alpha);
-	}
+	}*/
 }
 
 void PlatformSet::update() {
 	for (int i = 0; i < int(mPlatforms.size()); i++) {
 		mPlatforms[i]->updatePosition();
+	}
+}
+
+void PlatformSet::free() {
+	for (int i = 0; i < int(mPlatforms.size()); i++) {
+		if (mPlatforms[i] != NULL) {
+			delete mPlatforms[i];
+			mPlatforms[i] = NULL;
+		}
 	}
 }

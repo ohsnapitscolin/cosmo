@@ -11,6 +11,10 @@ MenuItem::MenuItem(int x, int y, std::string text, SDL_Color color) {
 	mHover = false;
 }
 
+MenuItem::~MenuItem() {
+	void free();
+}
+
 bool MenuItem::loadText() {
 	bool success = true;
 
@@ -70,4 +74,9 @@ bool MenuItem::hover(int x, int y) {
 
 void MenuItem::setHover(bool hover) {
 	mHover = hover;
+}
+
+void MenuItem::free() {
+	mNormalTexture.free();
+	mHoverTexture.free();
 }

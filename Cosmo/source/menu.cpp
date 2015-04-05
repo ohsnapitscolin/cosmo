@@ -8,6 +8,10 @@ Menu::Menu(std::string textureName) {
 	mTextureName = textureName;
 }
 
+Menu::~Menu() {
+	void free();
+}
+
 bool Menu::loadMedia() {
 	bool success = true;
 	for (int i = 0; i < int(mMenuItems.size()); i++) {
@@ -71,3 +75,12 @@ int Menu::start() {
 	return -1;
 }
 
+void Menu::free() {
+	for (int i = 0; i < int(mMenuItems.size()); i++) {
+		if (mMenuItems[i] != NULL) {
+			mMenuItems[i]->free();
+			delete mMenuItems[i];
+			mMenuItems[i] = NULL;
+		}
+	}
+}

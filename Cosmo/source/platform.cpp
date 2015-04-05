@@ -1,18 +1,21 @@
 #include "platform.h"
+#include "platformManager.h"
 #include "texture.h"
 #include "common.h"
 
 enum {HORIZONTAL, VERTICAL};
 
-Platform::Platform(int x, int y, int w, int h, int tileType)
+Platform::Platform(int x, int y, int tileType, int platformType)
 {
 	//Get the offsets
 	mBox.x = x;
 	mBox.y = y;
 
+	mPlatformTexture = platformManager.getPlatformTexture(platformType);
+
 	//Set the collision box
-	mBox.w = w;
-	mBox.h = h;
+	mBox.w = mPlatformTexture->getWidth();
+	mBox.h = mPlatformTexture->getHeight();
 
 	//Get the tile type
 	mType = tileType;
@@ -20,31 +23,9 @@ Platform::Platform(int x, int y, int w, int h, int tileType)
 	mSpeed = 0;
 }
 
-void Platform::setAlpha(int alpha) 
-{
-	mPlatformTexture.setAlpha(alpha);
-}
-
-
-bool Platform::loadMedia()
-{
-	//Loading success flag
-	bool success = true;
-
-	std::string mTextureName = "resources/platform.png";
-
-	if (!mPlatformTexture.loadFromFile(mTextureName))
-	{
-		printf("Failed to load texture: %s!\n", mTextureName.c_str());
-		success = false;
-	}
-
-	return success;
-}
-
 void Platform::render(SDL_Rect& camera)
 {
-	mPlatformTexture.render(mBox.x - camera.x, mBox.y - camera.y);
+	mPlatformTexture->render(mBox.x - camera.x, mBox.y - camera.y);
 }
 
 void Platform::setMotion(int start, int end, int direction, int speed) {

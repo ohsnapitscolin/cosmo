@@ -1,9 +1,11 @@
 #include "object.h"
 
-Object::Object(int type, LTexture* texture, int x, int y) 
+Object::Object(string id, int type, LTexture* texture, int x, int y) 
 {
 	mType = type;
 	mTexture = texture;
+
+	mId = id;
 	
 	mBox.x = x;
 	mBox.y = y;
@@ -16,6 +18,10 @@ Object::Object(int type, LTexture* texture, int x, int y)
 int Object::getType() 
 {
 	return mType;
+}
+
+SDL_Rect Object::getBox() {
+	return mBox;
 }
 
 void Object::setVisible(bool visible) 
@@ -37,6 +43,18 @@ void Object::renderSprite(int x, int y)
 	mTexture->renderSprite(mBox.x + x, mBox.y + y, currentSprite, false);
 	
 	mFrames++;
+}
+
+void Object::setInteraction(string interaction) {
+	mInteraction = interaction;
+}
+
+string Object::getId() {
+	return mId;
+}
+
+string Object::getInteraction() {
+	return mInteraction;
 }
 
 bool Object::overlap(SDL_Rect box) 

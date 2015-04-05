@@ -9,6 +9,10 @@ class MenuItem
 {
 public:
 	MenuItem(int x, int y, std::string text, SDL_Color color);
+	
+	~MenuItem();
+	void free();
+
 	bool loadText();
 	bool updateText(std::string text);
 	bool updateColor(SDL_Color color);
