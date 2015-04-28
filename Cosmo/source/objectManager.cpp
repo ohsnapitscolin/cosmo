@@ -1,9 +1,14 @@
 #include "objectmanager.h"
-#include "loadManager.h"
-#include "soundManager.h"
-#include "menuItem.h"
+
 #include <algorithm>
 #include <fstream>
+
+#include "doorManager.h"
+#include "level.h"
+#include "loadManager.h"
+#include "menuItem.h"
+#include "platformSet.h"
+#include "soundManager.h"
 
 const int NUM_LEVELS = 10;
 const int NUM_WORLDS = 3;
@@ -14,12 +19,12 @@ ObjectManager::ObjectManager()
 	for (int i = 0; i < int(mObjects.size()); i++) {
 		mObjects[i].resize(NUM_WORLDS);
 	}
+
 	SDL_Color textColor = { 255, 255, 255 };
-	mKeyDisplay = new MenuItem(50, 975, "0", textColor);
+	mKeyDisplay = new MenuItem(0, 0, "0", textColor, textColor);
 }
 
-ObjectManager::~ObjectManager() 
-{
+ObjectManager::~ObjectManager() {
 	free();
 }
 
@@ -62,7 +67,7 @@ bool ObjectManager::loadObjectTextures()
 			map >> spriteHeight;
 
 			if (!mObjectTextures[i].loadFromFile("resources/objects/" + textureName)) {
-				printf("Unable to load texture %d\n!", textureName.c_str());
+				printf("Unable to load texture %s\n!", textureName.c_str());
 				success = false;
 				break;
 			}
@@ -102,9 +107,14 @@ bool ObjectManager::loadObjects()
 			int objectCount;
 			map >> objectCount;
 
-			printf("%d %d %d\n", levelNumber, worldNumber, objectCount);
 			mObjects[levelNumber][worldNumber - 1].resize(objectCount);
 			
+			if (map.fail()) {
+				printf("Map reached unexpected end of file!\n");
+				success = false;
+				break;
+			}
+
 			for (int j = 0; j < objectCount; j++) {
 				string objectId;
 				map >> objectId;
@@ -114,23 +124,30 @@ bool ObjectManager::loadObjects()
 
 				int x, y;
 				bool visible;
+				bool fixed;
 				map >> x;
 				map >> y;
 				map >> visible;
+				map >> fixed;
 
-				printf("%d %d %d: %d\n", levelNumber, worldNumber, j, objectType);
 				mObjects[levelNumber][worldNumber - 1][j] = new Object(objectId, objectType, &mObjectTextures[objectType], x, y);
 				mObjects[levelNumber][worldNumber - 1][j]->setVisible(visible);
+				mObjects[levelNumber][worldNumber - 1][j]->setFixed(fixed);
 
 				if (objectType == 6) {
-					string interaction;
-					map >> interaction;
-					mObjects[levelNumber][worldNumber - 1][j]->setInteraction(interaction);						
+					int count;
+					map >> count;
+					for (int i = 0; i < count; i++) {
+						string interaction;
+						map >> interaction;
+						mObjects[levelNumber][worldNumber - 1][j]->addInteraction(interaction);
+					}
 				}
 
 				if (map.fail()) {
 					printf("Map reached unexpected end of file!\n");
 					success = false;
+					break;
 				}
 			}
 		}
@@ -142,7 +159,7 @@ bool ObjectManager::useKey()
 {
 	if (mKeyCount > 0) {
 		mKeyCount--;
-		mKeyDisplay->updateText(to_string(mKeyCount));
+		mKeyDisplay->updateText(to_string(static_cast<long long>(mKeyCount)));
 		return true;
 	}
 	else {
@@ -161,7 +178,7 @@ void ObjectManager::interact(SDL_Rect box, int level, int world, bool action)
 				if (action) {
 					soundManager.playSound(3);
 					mKeyCount++;
-					mKeyDisplay->updateText(to_string(mKeyCount));
+					mKeyDisplay->updateText(to_string(static_cast<long long>(mKeyCount)));
 					currentObject->setVisible(false);
 				}
 				break;
@@ -182,24 +199,52 @@ void ObjectManager::interact(SDL_Rect box, int level, int world, bool action)
 				break;
 			case 4:
 				if (action) {
+					soundManager.playSound(7);
 					unlock1 = true;
+					currentWorldIndex = 1;
+					currentObject->setVisible(false);
 				}
 				break;
 			case 5:
 				if (action) {
-					unlock3 = true;
+					soundManager.playSound(7);
+					unlock2 = true;
+					currentWorldIndex = 2;
+					currentObject->setVisible(false);
 				}
 				break;
 			case 6:
 				if (action) {
 					soundManager.playSound(3);
-					string interaction = currentObject->getInteraction();
+					vector<string> interactions = currentObject->getInteractions();
 					for (int i = 0; i < NUM_LEVELS; i++) {
 						for (int j = 0; j < NUM_WORLDS; j++) {
 							for (int k = 0; k < int(mObjects[i][j].size()); k++) {
-								if (mObjects[i][j][k]->getId() == interaction) {
-									mObjects[i][j][k]->setVisible(true);
+								for (int l = 0; l < int(interactions.size()); l++) {
+									if (mObjects[i][j][k]->getId() == interactions[l]) {
+										mObjects[i][j][k]->toggleVisible();
+									}
 								}
+							}
+						}
+					}
+					vector<vector<vector<Door*>>> doors = doorManager.getDoors();
+					for (int i = 0; i < NUM_LEVELS; i++) {
+						for (int j = 0; j < NUM_WORLDS; j++) {
+							for (int k = 0; k < int(doors[i][j].size()); k++) {
+								for (int l = 0; l < int(interactions.size()); l++) {
+									if (doors[i][j][k]->getDoorID() == interactions[l]) {
+										doors[i][j][k]->setLocked(false);
+									}
+								}
+							}
+						}
+					}
+					vector<Platform*> platforms = currentLevel->getWorld(currentWorldIndex)->getPlatformSet()->getPlatforms();
+					for (int i = 0; i < int(platforms.size()); i++) {
+						for (int j = 0; j < int(interactions.size()); j++) {
+							if (platforms[i]->getId() == interactions[j]) {
+								platforms[i]->toggle();
 							}
 						}
 					}
@@ -210,8 +255,8 @@ void ObjectManager::interact(SDL_Rect box, int level, int world, bool action)
 }
 
 
-int ObjectManager::findStaticCollisions(SDL_Rect box, int level, int world, int delta, int direction) {
-	
+int ObjectManager::findStaticCollisions(SDL_Rect box, int level, int world, int delta, int direction) 
+{	
 	int topA = box.y;
 	int bottomA = box.y + box.h - 1;
 	int leftA = box.x;
@@ -222,9 +267,9 @@ int ObjectManager::findStaticCollisions(SDL_Rect box, int level, int world, int 
 	for (int i = 0; i < int(mObjects[level][world-1].size()); i++)
 	{
 		Object* currentObject = mObjects[level][world - 1][i];
-		/*if (!currentObject->isFixed()) {
+		if (!currentObject->isFixed()) {
 			continue;
-		}*/
+		}
 
 		SDL_Rect objectBox = currentObject->getBox();
 
@@ -255,7 +300,6 @@ int ObjectManager::findStaticCollisions(SDL_Rect box, int level, int world, int 
 			lA += delta;
 		}
 		if (topB > bA || tA > bottomB || lA > rightB || rA < leftB) {
-			//printf("CONTINUE");
 			continue;
 		}
 
@@ -274,15 +318,12 @@ int ObjectManager::findStaticCollisions(SDL_Rect box, int level, int world, int 
 			}
 		}
 		if (direction == LEFT) {
-			printf("%d\n", delta);
 			if ((leftA - delta) <= rightB) {
 				currentDistance = leftA - rightB - 1;
 				currentDistance = min(currentDistance, delta);
-				printf("leftA: %d rightB: %d %d\n", leftA, rightB, currentDistance);
 			}
 		}
 		if (direction == RIGHT) {
-			printf("right\n");
 			if (rightA + delta >= leftB) {
 				currentDistance = leftB - rightA - 1;
 				currentDistance = min(currentDistance, delta);
@@ -331,9 +372,8 @@ int ObjectManager::triggerWorld()
 	return NONE;
 }
 
-void ObjectManager::renderKeyDisplay() 
-{
-	mKeyDisplay->render();
+void ObjectManager::renderKeyDisplay() {
+	mKeyDisplay->render(50, SCREEN_HEIGHT - 100);
 }
 
 void ObjectManager::free() 

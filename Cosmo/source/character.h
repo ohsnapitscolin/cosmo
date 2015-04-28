@@ -1,70 +1,65 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
-#include <SDL.h>
-#include <string>
-#include <vector>
+#include "platform.h"
 #include "texture.h"
-#include "object.h"
 
-enum {STANDING, JUMPING, FALLING, CLIMBING};
+enum states { STANDING, JUMPING, FALLING, CLIMBING };
+enum spirtes { WALK, JUMP, IDLE, FALL, CLIMB, LAND };
 
 class Character
 {
 public:
 	Character(int type);
 
-	void loadMedia();
+	bool loadMedia();
 
-	void loadState();
-
-	bool checkForOverlap(int worldIndex);
-	void setAlpha(int alpha);
-
-	void handleEvent(SDL_Event& e);
 	void move(SDL_Rect& camera);
+	void handleEvent(SDL_Event& e);
 
-	void saveState();
-
-	SDL_Rect getBox();
-
-	void setCamera(SDL_Rect& camera);
-	void setPosition(int x, int y);
-	SDL_Point getPosition();
 	void render(SDL_Rect& camera);
 
-	int getKeyCount();
+	bool saveState();
+	bool loadState();
+
+	bool checkForOverlap(int worldIndex);
+
+	void setAlpha(int alpha);
+	void setCamera(SDL_Rect& camera);
+	void setPosition(int x, int y);
+
+	SDL_Point getPosition();
+	SDL_Rect getBox();
 
 private:
-
+	int mType;
+	
 	SDL_Rect mBox;
 
-	float mVelX, mVelY;
+	float mVelX;
+	float mVelY;
+	float mTargetSpeedX;
 
-	int mFrame;
+	std::vector<Texture*> mTextures;
 
 	int currentDirection;
 
 	bool mIdleJump;
 	bool mInAir;
 
-	int mCharState;
+	int mCurrentState;
 	int mPrevState;
 
 	bool mLadderOverlap;
 	bool mLadderBelow;
 
+	Platform* mCurrentPlatform;
+
 	void updateCharSpeed();
-
-	int mCurrentPlatform;
-
-	bool sheetComplete(int currentAnimation, int speed);
 	void checkForOverlaps();
+	bool sheetComplete(int currentAnimation, int speed);
 
-	std::vector<LTexture*> mTextures;
-
-	int mType;
-
-	float mTargetSpeedX;
+	int mFrame;
 };
+
 #endif

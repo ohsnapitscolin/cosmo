@@ -3,33 +3,39 @@
 
 #include "common.h"
 #include "texture.h"
-#include <SDL.h>
-#include <string>
 
-class Door 
+class Door
 {
 public:
-	Door(string id, string destination, int levelIndex, int worldIndex);
+	Door(string id, string destination, int levelIndex, int worldIndex, SDL_Rect box);
+	void setLocked(bool locked);
+
+	void renderSprite(int x, int y);
+
+	bool overlap(SDL_Rect box);	
+	bool isLocked();
+
+	SDL_Rect getBox();
 
 	string getDoorID();
 	string getDestinationID();
-	SDL_Rect getBox();
+
 	int getLevelIndex();
 	int getWorldIndex();
-	void setBox(int x, int y, int w, int h);
-	void setLocked(bool locked);
-	bool isLocked();
-	bool overlap(SDL_Rect box);
-	void renderSprite(int x, int y);
+
 
 private:
-	bool mLocked;
 	string mDoorID;
 	string mDestinationID;
+
+	SDL_Rect mBox;
+
+	Texture* mDoorTexture;
+
 	int mLevelIndex;
 	int mWorldIndex;
-	SDL_Rect mBox;
-	LTexture* mDoorTexture;
+
+	bool mLocked;
 
 	int mFrames;
 };

@@ -1,17 +1,9 @@
 #ifndef WORLD_H_DEFINED
 #define WORLD_H_DEFINED
 
-#include <string>
 #include "common.h"
 #include "tileset.h"
 #include "platformset.h"
-
-struct worldTexture {
-	int offsetH;
-	int offsetV;
-	string name;
-	LTexture* texture;
-};
 
 class World
 {
@@ -41,13 +33,14 @@ private:
 	TileSet* mTileSet;
 	PlatformSet* mPlatformSet;
 
-	LTexture* mGridTexture;
-	vector<LTexture*> mBackgrounds;
-	vector<LTexture*> mForegrounds;
+	Texture* mGridTexture;
+	vector<Texture*> mBackgrounds;
+	vector<Texture*> mForegrounds;
 
-	std::string mWorld;
+	string mWorld;
 
-	int mHeight;
 	int mWidth;
+	int mHeight;
 };
+
 #endif

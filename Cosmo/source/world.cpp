@@ -1,22 +1,19 @@
 #include "world.h"
-#include "level.h"
-#include "objectManager.h"
-#include "doorManager.h"
+
 #include <fstream>
 #include <algorithm>
 
 World::World(int index, std::string levelFolder)
 {
-	mWorld = levelFolder + "world" + std::to_string(index) + "/";
+	mWorld = levelFolder + "world" + to_string(static_cast<long long>(index)) + "/";
 	
 	mTileSet = new TileSet(mWorld + "tileset.txt");
 	mPlatformSet = new PlatformSet(mWorld + "platforms.txt");
 
-	mGridTexture = new LTexture();
+	mGridTexture = new Texture();
 }
 
-World::~World() 
-{
+World::~World() {
 	free();
 }
 
@@ -62,7 +59,7 @@ bool World::loadMedia()
 		bool loadBackground;
 		map >> loadBackground;
 		if (loadBackground) {
-			mBackgrounds.push_back(new LTexture());
+			mBackgrounds.push_back(new Texture());
 
 			string backgroundName;
 			map >> backgroundName;
@@ -90,7 +87,7 @@ bool World::loadMedia()
 		bool loadForeground;
 		map >> loadForeground;
 		if (loadForeground) {
-			mForegrounds.push_back(new LTexture());
+			mForegrounds.push_back(new Texture());
 
 			string foregroundName;
 			map >> foregroundName;
@@ -125,14 +122,13 @@ void World::setAlpha(int alpha)
 	for (int i = 0; i < int(mForegrounds.size()); i++) {
 		mForegrounds[i]->setAlpha(alpha);
 	}
-	mPlatformSet->setAlpha(alpha);
 }
 
 
 void World::render(int x, int y, SDL_Rect& camera) 
 {
 	for (int i = 0; i < int(mBackgrounds.size()); i++) {
-		mBackgrounds[i]->render(x * (1.0 - (1.0 / (i + 2))), y);
+		mBackgrounds[i]->render((int)(x * (1.0 - (1.0 / (i + 2)))), y);
 	}
 	mGridTexture->render(x, y);
 	mPlatformSet->render(camera);

@@ -1,21 +1,16 @@
 #include "doorManager.h"
 
-Door::Door(string doorID, string destinationID, int levelIndex, int worldIndex) 
+Door::Door(string doorID, string destinationID, int levelIndex, int worldIndex, SDL_Rect box) 
 {
 	mDoorID = doorID;
 	mDestinationID = destinationID;
 	mLevelIndex = levelIndex;
 	mWorldIndex = worldIndex;
 
-	mDoorTexture = NULL;
-}
+	mLocked = false;
 
-void Door::setBox(int x, int y, int w, int h) 
-{
-	mBox.x = x;
-	mBox.y = y;
-	mBox.w = w;
-	mBox.h = h;
+	mBox = box;
+	mDoorTexture = NULL;
 }
 
 void Door::setLocked(bool locked) 

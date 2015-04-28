@@ -1,15 +1,15 @@
 #include "platformManager.h"
+
 #include <fstream>
 
-PlatformManager::PlatformManager() {
-
-}
+PlatformManager::PlatformManager() {}
 
 PlatformManager::~PlatformManager() {
 	free();
 }
 
-bool PlatformManager::loadMedia() {
+bool PlatformManager::loadMedia() 
+{
 	bool success = true;
 
 	fstream map("resources/platforms/header.txt");
@@ -45,17 +45,19 @@ bool PlatformManager::loadMedia() {
 	return success;
 }
 
-void PlatformManager::free() {
-	for (int i = 0; i < int(mPlatformTextures.size()); i++) {
-		mPlatformTextures[i].free();
-	}
-}
-
-LTexture* PlatformManager::getPlatformTexture(int index) {
+Texture* PlatformManager::getPlatformTexture(int index) 
+{
 	if (index >= 0 && index < int(mPlatformTextures.size())) {
 		return &mPlatformTextures[index];
 	}
 	else {
 		return NULL;
+	}
+}
+
+void PlatformManager::free()
+{
+	for (int i = 0; i < int(mPlatformTextures.size()); i++) {
+		mPlatformTextures[i].free();
 	}
 }

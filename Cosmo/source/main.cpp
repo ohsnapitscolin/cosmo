@@ -1,112 +1,76 @@
-#include <SDL.h>
-//#include <vld.h>
-#include <SDL_image.h>
-#include <SDL_ttf.h>
-#include <SDL_mixer.h>
-#include <stdio.h>
-#include <string>
 #include <fstream>
-#include <vector>
-#include "texture.h"
-#include "window.h"
-#include "common.h"
+
+#include "vld.h"
 #include "character.h"
-#include "tileset.h"
-#include "timer.h"
-#include "level.h"
-#include "world.h"
-#include "menu.h"
-#include "loadManager.h"
-#include "objectManager.h"
+#include "common.h"
 #include "doorManager.h"
-#include "soundManager.h"
+#include "level.h"
+#include "loadManager.h"
+#include "menu.h"
+#include "objectManager.h"
 #include "platformManager.h"
-#include <time.h>
-#include <SDL_thread.h>
+#include "soundManager.h"
+#include "texture.h"
+#include "world.h"
+#include "window.h"
 
-const int SCREEN_FPS = 60;
-const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
-
-enum threadState { RUNNING, STOPPED };
-
-//Starts up SDL and creates window
 bool init();
-
-void runLoadingScreen();
-
-//Our test thread function
-int threadFunction(void* data);
-int gThreadState;
-
-//Loads media
 bool loadMedia();
-
-//Frees media and shuts down SDL
 void close();
 
 enum { EXIT, LOAD, ENTER };
-LWindow gWindow;
-Character* character;
-Menu* menu;
 
-LTexture loadingSprite;
+Character* character;
+Window gWindow;
+Texture loadingSprite;
+Menu* menu;
 
 bool init()
 {
-	//Initialization flag
 	bool success = true;
 
-	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0)
-	{
+	//initialize SDL
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0) {
 		printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
 		success = false;
 	}
-	else
-	{
-		//Set texture filtering to linear
-		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
-		{
+	else {
+		//set texture filtering to linear
+		if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
 			printf("Warning: Linear texture filtering not enabled!");
 		}
 
-		//Create window
-		if (!gWindow.init())
-		{
+		//create window
+		if (!gWindow.init()) {
 			printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
 			success = false;
 		}
-		else
-		{
-			//Create renderer for window
+		else {
+			//create renderer for window
 			gRenderer = gWindow.createRenderer();
-			if (gRenderer == NULL)
-			{
+			if (gRenderer == NULL) {
 				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
 				success = false;
 			}
-			else
-			{
-				//Initialize renderer color
+			else {
+				//initialize renderer color
 				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
-				//Initialize PNG loading
+				//initialize PNG loading
 				int imgFlags = IMG_INIT_PNG;
-				if (!(IMG_Init(imgFlags) & imgFlags))
-				{
+				if (!(IMG_Init(imgFlags) & imgFlags)) {
 					printf("SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
 					success = false;
 				} 
 
-				//Initialize SDL_mixer
-				if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
-				{
+				//initialize SDL_mixer
+				if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
 					printf("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
 					success = false;
 				}
 
-				if (TTF_Init() == -1)
-				{
+				//initialize SDL_ttf
+				if (TTF_Init() == -1) {
 					printf("SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError());
 					success = false;
 				}
@@ -122,7 +86,6 @@ bool init()
 
 bool loadMedia()
 {
-	//Loading success flag
 	bool success = true;
 
 	if (!loadManager.startUp()) {
@@ -150,15 +113,8 @@ bool loadMedia()
 		success = false;
 	}
 
-
-	if (!loadingSprite.loadFromFile("resources/loading.png")) {
-		success = false;
-	}
-	else {
-		loadingSprite.clipSprite(96, 96);
-	}
-
 	if (!loadManager.loadLevel(currentLevel, false)) {
+		printf("Unable to load initial level!\n");
 		success = false;
 	}
 
@@ -167,69 +123,42 @@ bool loadMedia()
 
 int main(int argc, char* args[])
 {
-	//Start up SDL and create window
-	if (!init())
-	{
+	if (!init()) {
 		printf("Failed to initialize!\n");
 	}
-	else
-	{
-		if (!loadMedia())
-		{
+	else {
+		if (!loadMedia()) {
 			printf("Failed to load media!\n");
 		}
-		else
-		{
-
+		else {
 			character = new Character(0);
 			character->loadMedia();
 
-			SDL_Point charStart = currentLevel->getCharacterStart();
-			character->setPosition(charStart.x, charStart.y);
+			SDL_Point charPosition = currentLevel->getCharacterStart();
+			character->setPosition(charPosition.x, charPosition.y);
 
-			menu = new Menu("resources/screen3.png");
+			menu = new Menu("resources/title.png");
 			menu->loadMedia();
-			int next = menu->start();
 
-			gThreadState = STOPPED;
+			int selection = menu->run();
 
-			if (next == 2) {
+			if (selection == 1) {
 				close();
 				return 1;
 			}
 
-			/*if (next == 1) {
-				loadManager.freeLevels();
-				//break;
-				//SDL_Rect charBox = loadManager.load();
-				//character->setPosition(charBox.x, charBox.y);
-			}*/
-
 			int resetFade = 0;
 			int reset = NONE;
-			//loadManager.loadNeighbors();
-
+			
 			SDL_ShowCursor(SDL_DISABLE);
 
-			//Main loop flag
 			bool quit = false;
 
-			//Event handler
 			SDL_Event e;
-
-			//Level camera
 			SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-
-			//The frames per second timer
-			LTimer fpsTimer;
-
-			//The frames per second cap timer
-			LTimer capTimer;
 
 			int oldWorldIndex = currentWorldIndex;
 
-			//The background scrolling offset
-			int scrollingOffset = 0;
 			int fadeSpeed = 25;
 			int currentFade = 0;
 
@@ -238,62 +167,38 @@ int main(int argc, char* args[])
 
 			Door* doorIndex = NULL;
 
-			bool view2 = false;
 			bool worldTransition = false;
 
 			int frame = 0;
 
-			LTexture* fadeScreen = loadManager.getFadeScreen();
+			Texture* fadeScreen = loadManager.getFadeScreen();
 			fadeScreen->setScale(100);
-
-			int data = 0;
 
 			soundManager.playMusic(0);
 
-			//While application is running
 			while (!quit)
 			{
 				if (frame >= INT_MAX) {
 					frame = 0;
 				}
 
-				clock_t start = clock();
 				World* currentWorld = currentLevel->getWorld(currentWorldIndex);
-				//Start cap timer
-				capTimer.start();
-				//Handle events on queue
-		
-				while (SDL_PollEvent(&e) != 0)
-				{
-					//User requests quit
-					if (e.type == SDL_QUIT)
-					{
+			
+				while (SDL_PollEvent(&e) != 0) {
+					if (e.type == SDL_QUIT) {
 						quit = true;
 					}
-					if (e.type == SDL_KEYDOWN && e.key.repeat == 0)
-					{
-						//Adjust the 
-						World* newWorld;
+					if (e.type == SDL_KEYDOWN && e.key.repeat == 0) {
+						World* newWorld = NULL;
 						switch (e.key.keysym.sym)
 						{
 						case SDLK_ESCAPE:
-							next = menu->start();
-							if (next == 2) {
+							selection = menu->run();
+							if (selection == 1) {
 								quit = true;
 							}
-							if (next == 1) {
-								ofstream save("resources/save.txt", std::ios::out | std::ios::trunc);
-								save << currentLevel->getLevelNumber();
-								save << ' ';
-								save << currentWorldIndex;
-								save << ' ';
-								save << character->getBox().x;
-								save << ' ';
-								save << character->getBox().y;
-								save << '\n';
-							}
 							break;
-						case SDLK_1:
+						case SDLK_a:
 							if (!unlock1) {
 								break;
 							}
@@ -311,7 +216,7 @@ int main(int argc, char* args[])
 								currentWorldIndex = oldWorldIndex;
 							}
 							break;
-						case SDLK_2:
+						case SDLK_w:
 							if (!unlock2) {
 								break;
 							}
@@ -329,7 +234,7 @@ int main(int argc, char* args[])
 								soundManager.playSound(4);
 							}
 							break;
-						case SDLK_3:
+						case SDLK_d:
 							if (!unlock3) {
 								break;
 							}
@@ -350,7 +255,6 @@ int main(int argc, char* args[])
 						}
 					}
 
-					//Handle input for the character
 					character->handleEvent(e);
 					gWindow.handleEvent(e);
 				}
@@ -384,7 +288,6 @@ int main(int argc, char* args[])
 						loadFade = ALPHA_MAX;
 						loadState = LOAD;
 					}
-					//currentWorld->setAlpha(ALPHA_MAX - loadFade);*/
 					fadeScreen->setAlpha(loadFade);
 				}
 
@@ -397,10 +300,7 @@ int main(int argc, char* args[])
 					loadState = ENTER;
 
 					if (!loadManager.isPreloaded(currentLevel)) {
-						SDL_Thread* threadID = SDL_CreateThread(threadFunction, "LoadingThread", (void*)data);
-						runLoadingScreen();
-						//loadManager.loadLevel(currentLevel, true);
-						SDL_WaitThread(threadID, NULL);
+						loadManager.loadLevel(currentLevel, true);
 					}
 					//bool startLoadingScreen();
 				}
@@ -411,7 +311,6 @@ int main(int argc, char* args[])
 						loadState = NONE;
 						loadFade = 0;
 					}
-					//currentWorld->setAlpha(ALPHA_MAX - loadFade);
 					fadeScreen->setAlpha(loadFade);
 				}
 
@@ -436,17 +335,10 @@ int main(int argc, char* args[])
 				//move the character
 				character->move(camera);
 				character->setCamera(camera);
-				if (currentLevel->getFixedX()) {
-					camera.x = currentLevel->getWidth() / 2 - camera.w / 2;
-				}
+				
+				charPosition = character->getPosition();
 
-				if (currentLevel->getFixedY()) {
-					camera.y = currentLevel->getHeight() / 2 - camera.h / 2;
-				}
-
-				SDL_Point charPos = character->getPosition();
-
-				if (charPos.y >= currentLevel->getDeathLine() && reset != ENTER) {
+				if (charPosition.y >= currentLevel->getDeathLine() && reset != ENTER) {
 					soundManager.playSound(6);
 					reset = ENTER;
 				}
@@ -454,9 +346,8 @@ int main(int argc, char* args[])
 				currentLevel->update();
 
 				/**************************************RENDER*********************************/
-				clock_t render = clock();
+	
 				//clear the screen
-
 				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 				SDL_RenderClear(gRenderer);
 
@@ -465,10 +356,7 @@ int main(int argc, char* args[])
 					oldWorld->render(-camera.x, -camera.y, camera);
 				}
 
-				clock_t render_new = clock();
 				currentWorld->render(-camera.x, -camera.y, camera);
-				render_new = clock() - render_new;
-				float render_new_f = ((float)render_new) / CLOCKS_PER_SEC;
 
 				objectManager.render(-camera.x, -camera.y, currentLevel->getLevelNumber(), currentWorldIndex);
 				doorManager.render(-camera.x, -camera.y, currentLevel->getLevelNumber(), currentWorldIndex);
@@ -488,7 +376,6 @@ int main(int argc, char* args[])
 					if (resetFade >= ALPHA_MAX) {
 						SDL_Point charPos = currentLevel->getCharacterStart();
 						character->loadState();
-						//character->setPosition(charPos.x, charPos.y);
 						reset = EXIT;
 						resetFade = ALPHA_MAX;
 					}
@@ -508,37 +395,21 @@ int main(int argc, char* args[])
 				}
 
 				objectManager.renderKeyDisplay();
-				//Update screen
+			
+				//update screen
 				SDL_RenderPresent(gRenderer);
-
-				render = clock() - render;
-				float render_f = ((float)render) / CLOCKS_PER_SEC;
-
-
-				/*int frameTicks = capTimer.getTicks();
-				if (frameTicks < SCREEN_TICKS_PER_FRAME) {
-					//Wait remaining time
-					SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTicks);
-				}*/
-
-				start = clock() - start;
-				float start_f = ((float)start) / CLOCKS_PER_SEC;
-				/*if (start_f > .1) {
-					printf("%d %f seconds\nrender %f\nrender new %f\n%d\n", frame, start_f, render_f, render_new_f, worldTransition);
-				}*/
 
 				frame++;
 			}
 		}
 
-		//Free resources and close SDL
+		//free resources and close SDL
 		close();
 	}
-
 	return 0;
 }
 
-int threadFunction(void *data)
+/*int threadFunction(void *data)
 {
 	gThreadState = RUNNING;
 
@@ -550,9 +421,9 @@ int threadFunction(void *data)
 	gThreadState = STOPPED;
 
 	return 0;
-}
+}*/
 
-void runLoadingScreen() {
+/*void runLoadingScreen() {
 	SDL_Event e;
 	bool quit = false;
 
@@ -582,7 +453,7 @@ void runLoadingScreen() {
 
 		frame++;
 	}
-}
+}*/
 
 void close()
 {
@@ -597,16 +468,17 @@ void close()
 	delete menu;
 
 	doorManager.free();
-	soundManager.free();
 	objectManager.free();
+	soundManager.free();
+	platformManager.free();
 
-	//Destroy window	
 	SDL_DestroyRenderer(gRenderer);
 
 	gWindow.free();
 	gRenderer = NULL;
 
-	//Quit SDL subsystems
+	TTF_Quit();
+	Mix_Quit();
 	IMG_Quit();
 	SDL_Quit();
 }

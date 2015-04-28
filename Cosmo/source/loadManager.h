@@ -1,20 +1,19 @@
 #ifndef LOAD_MANAGER_H_DEFINED
 #define LOAD_MANAGER_H_DEFINED
 
-#include <SDL.h>
-#include <SDL_ttf.h>
-#include "level.h"
 #include "common.h"
+
+#include "level.h"
 #include "door.h"
+#include "slope.h"
 #include "tileset.h"
 
 class LoadManager 
 {
 public:
-
 	LoadManager();
 
-	vector<LTexture*> getSprite(int type);
+	vector<Texture*> getSprite(int type);
 
 	bool startUp();
 
@@ -37,13 +36,12 @@ public:
 	void loadScreen(Level* level, int screen, bool render);
 	bool loadLevelfromDoor(Door* door);
 	
-	LTexture* getFadeScreen();
+	Texture* getFadeScreen();
 
 	void loadNeighbors();
 	void freeSlopes();
 
 	Slope* getCurrentSlope(int type);
-
 
 private:
 	bool loadSlopes();
@@ -56,7 +54,7 @@ private:
 	bool loadCharacterSprites(int type);
 
 	bool loadSprite(string filename, int index, int width, int height, int type);
-	vector<vector<LTexture*>> mCharacterSprites;
+	vector<vector<Texture*>> mCharacterSprites;
 
 	vector<Level*> mStoredLevels;
 	int mStoredLevelIndex;
@@ -65,7 +63,7 @@ private:
 	vector<Door*> mDoors;
 	vector<Level*> mLevels;
 
-	LTexture mFadeScreen;
-	LTexture mLoadingTexture;
+	Texture mFadeScreen;
+	Texture mLoadingTexture;
 };
 #endif

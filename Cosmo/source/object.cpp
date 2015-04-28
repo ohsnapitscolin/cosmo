@@ -1,6 +1,6 @@
 #include "object.h"
 
-Object::Object(string id, int type, LTexture* texture, int x, int y) 
+Object::Object(string id, int type, Texture* texture, int x, int y) 
 {
 	mType = type;
 	mTexture = texture;
@@ -13,20 +13,19 @@ Object::Object(string id, int type, LTexture* texture, int x, int y)
 	mBox.h = texture->getWidth() / texture->getSpriteCount();
 
 	mVisible = true;
+	mFixed = false;
 }
 
-int Object::getType() 
-{
+string Object::getId() {
+	return mId;
+}
+
+int Object::getType() {
 	return mType;
 }
 
 SDL_Rect Object::getBox() {
 	return mBox;
-}
-
-void Object::setVisible(bool visible) 
-{
-	mVisible = visible;
 }
 
 void Object::renderSprite(int x, int y) 
@@ -45,16 +44,12 @@ void Object::renderSprite(int x, int y)
 	mFrames++;
 }
 
-void Object::setInteraction(string interaction) {
-	mInteraction = interaction;
+void Object::addInteraction(string interaction) {
+	mInteractions.push_back(interaction);
 }
 
-string Object::getId() {
-	return mId;
-}
-
-string Object::getInteraction() {
-	return mInteraction;
+vector<string> Object::getInteractions() {
+	return mInteractions;
 }
 
 bool Object::overlap(SDL_Rect box) 
@@ -90,4 +85,25 @@ bool Object::overlap(SDL_Rect box)
 	}
 
 	return true;
+}
+
+void Object::setVisible(bool visible) {
+	mVisible = visible;
+}
+
+void Object::toggleVisible() {
+	if (mVisible) {
+		mVisible = false;
+	}
+	else {
+		mVisible = true;
+	}
+}
+
+void Object::setFixed(bool fixed) {
+	mFixed = fixed;
+}
+
+bool Object::isFixed() {
+	return mFixed;
 }

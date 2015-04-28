@@ -1,19 +1,13 @@
 #ifndef TILESET_H_DEFINED
 #define TILESET_H_DEFINED
 
-#include <SDL.h>
-#include <string>
-#include <vector>
 #include "common.h"
-#include "tile.h"
 #include "texture.h"
-#include "collision.h"
-
+#include "tile.h"
 
 class TileSet
 {
 public:
-	//Initializes position and type
 	TileSet(std::string mapName);
 	~TileSet();
 
@@ -27,7 +21,6 @@ public:
 	void findOverlapTiles(SDL_Rect box, vector<Tile*>& overlapTiles);
 	bool findStaticCollisions(SDL_Rect box, int direction, int& distance, int& type);
 
-	//Shows the tile
 	void render(SDL_Rect& camera);
 	void setAlpha(int value);
 
@@ -35,10 +28,9 @@ private:
 	int mTileSetHeight;
 	int mTileSetWidth;
 
-	//The character sprite location.
-	std::string mMapName;
+	string mMapName;
 
-	std::vector<std::vector<Tile*>> mTiles;
+	vector<std::vector<Tile*>> mTiles;
 
 	bool setTiles();
 
@@ -48,4 +40,5 @@ private:
 	bool ignoreSlopes(int tileType, int direction);
 	bool ignoreTile(int tileType, int direction);
 };
+
 #endif

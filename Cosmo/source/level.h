@@ -1,10 +1,8 @@
 #ifndef LEVEL_H_DEFINED
 #define LEVEL_H_DEFINED
 
-#include "tileset.h"
-#include "world.h"
 #include "common.h"
-#include <string>
+#include "world.h"
 
 class Level
 {
@@ -14,18 +12,17 @@ public:
 	~Level();
 
 	void free();
-
 	void unload();
 
-	bool loadMedia(bool renderLoad);
+	bool loadMedia();
+
 	void update();
 
 	World* getWorld(int worldIndex);
 
 	SDL_Point getCharacterStart();
-	
-	int getLevelNumber();
 
+	int getLevelNumber();
 	int getDeathLine();
 
 	int getWidth();
@@ -37,7 +34,6 @@ public:
 	bool isLoaded();
 
 private:
-
 	int mLevelNumber;
 
 	bool mWorlds[3];
@@ -46,8 +42,8 @@ private:
 	World* mWorld2;
 	World* mWorld3;
 
-	int mHeight;
 	int mWidth;
+	int mHeight;
 
 	bool mLoadState;
 	bool mLoadAttempt;
@@ -61,4 +57,5 @@ private:
 
 	SDL_Point mCharStart;
 };
+
 #endif

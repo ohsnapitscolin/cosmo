@@ -1,8 +1,10 @@
 #include "doorManager.h"
+
+#include <fstream>
+
 #include "loadManager.h"
 #include "objectManager.h"
 #include "soundManager.h"
-#include <fstream>
 
 const int NUM_LEVELS = 10;
 const int NUM_WORLDS = 3;
@@ -43,7 +45,6 @@ bool DoorManager::loadMedia()
 			int DoorCount;
 			map >> DoorCount;
 
-			printf("%d %d %d\n", levelNumber, worldNumber, DoorCount);
 			mDoors[levelNumber][worldNumber - 1].resize(DoorCount);
 
 			for (int j = 0; j < DoorCount; j++) {
@@ -52,18 +53,17 @@ bool DoorManager::loadMedia()
 				map >> doorID;
 				map >> destinationID;
 
-				int x, y, w, h;
+				SDL_Rect doorBox;
 				bool locked;
 
-				map >> x;
-				map >> y;
-				map >> w;
-				map >> h;
+				map >> doorBox.x;
+				map >> doorBox.y;
+				map >> doorBox.w;
+				map >> doorBox.h;
 
 				map >> locked;
 
-				mDoors[levelNumber][worldNumber - 1][j] = new Door(doorID, destinationID, levelNumber, worldNumber);
-				mDoors[levelNumber][worldNumber - 1][j]->setBox(x, y, w, h);
+				mDoors[levelNumber][worldNumber - 1][j] = new Door(doorID, destinationID, levelNumber, worldNumber, doorBox);
 				mDoors[levelNumber][worldNumber - 1][j]->setLocked(locked);
 				
 				if (map.fail()) {
@@ -73,10 +73,11 @@ bool DoorManager::loadMedia()
 			}
 		}
 	}
+	map.close();
 	return success;
 }
 
-LTexture* DoorManager::getDoorTexture(int type) {
+Texture* DoorManager::getDoorTexture(int type) {
 	if (type >= 0 && type < int(mDoorTextures.size())) {
 		return &mDoorTextures[type];
 	}
@@ -108,7 +109,7 @@ bool DoorManager::loadTextures()
 			map >> spriteHeight;
 
 			if (!mDoorTextures[i].loadFromFile("resources/doors/" + textureName)) {
-				printf("Unable to load texture %d\n!", textureName.c_str());
+				printf("Unable to load texture %s\n!", textureName.c_str());
 				success = false;
 				break;
 			}
@@ -122,11 +123,12 @@ bool DoorManager::loadTextures()
 			}
 		}
 	}
-	printf("Door textures loaded! successfully!\n");
+	map.close();
 	return success;
 }
 
-void DoorManager::interact(SDL_Rect box, int level, int world, bool action) {
+void DoorManager::interact(SDL_Rect box, int level, int world, bool action) 
+{
 	Door* door = findOverlapDoor(box, level, world);
 	if (door != NULL) {
 		if (door->isLocked()) {
@@ -154,7 +156,8 @@ void DoorManager::interact(SDL_Rect box, int level, int world, bool action) {
 	}
 }
 
-Door* DoorManager::findDestination(Door* door) {
+Door* DoorManager::findDestination(Door* door) 
+{
 	Door* destination = NULL;
 	for (int i = 0; i < NUM_LEVELS; i++) {
 		for (int j = 0; j < NUM_WORLDS; j++) {
@@ -168,7 +171,8 @@ Door* DoorManager::findDestination(Door* door) {
 	return destination;
 }
 
-vector<int> DoorManager::getNeighbors(int levelIndex) {
+vector<int> DoorManager::getNeighbors(int levelIndex) 
+{
 	vector<int> neighbors;
 	vector<vector<Door*>> doors = mDoors[levelIndex];
 	for (int i = 0; i < NUM_WORLDS; i++) {
@@ -182,7 +186,8 @@ vector<int> DoorManager::getNeighbors(int levelIndex) {
 	return neighbors;
 }
 
-void DoorManager::render(int x, int y, int level, int world) {
+void DoorManager::render(int x, int y, int level, int world) 
+{
 	vector<Door*> doors = mDoors[level][world - 1];
 	if (!doors.empty()) {
 		for (int i = 0; i < int(doors.size()); i++) {
@@ -191,7 +196,8 @@ void DoorManager::render(int x, int y, int level, int world) {
 	}
 }
 
-Door* DoorManager::findOverlapDoor(SDL_Rect box, int level, int world) {
+Door* DoorManager::findOverlapDoor(SDL_Rect box, int level, int world) 
+{
 	vector<Door*> doors = mDoors[level][world - 1];
 	Door* overlapDoor = NULL;
 	if (!doors.empty()) {
@@ -216,7 +222,8 @@ Door* DoorManager::triggerDoor()
 	return NULL;
 }
 
-void DoorManager::free() {
+void DoorManager::free() 
+{
 	for (int i = 0; i < NUM_LEVELS; i++) {
 		for (int j = 0; j < NUM_WORLDS; j++) {
 			for (int k = 0; k < int(mDoors[i][j].size()); k++) {
@@ -230,4 +237,8 @@ void DoorManager::free() {
 	for (int i = 0; i < int(mDoorTextures.size()); i++) {
 		mDoorTextures[i].free();
 	}
+}
+
+vector<vector<vector<Door*>>> DoorManager::getDoors() {
+	return mDoors;
 }

@@ -1,42 +1,48 @@
 #include "platform.h"
 #include "platformManager.h"
-#include "texture.h"
-#include "common.h"
 
-enum {HORIZONTAL, VERTICAL};
-
-Platform::Platform(int x, int y, int tileType, int platformType)
+Platform::Platform(string id, int x, int y, int tileType, int platformType)
 {
-	//Get the offsets
+	mId = id;
+	mType = tileType;
+
 	mBox.x = x;
 	mBox.y = y;
 
 	mPlatformTexture = platformManager.getPlatformTexture(platformType);
 
-	//Set the collision box
 	mBox.w = mPlatformTexture->getWidth();
 	mBox.h = mPlatformTexture->getHeight();
 
-	//Get the tile type
-	mType = tileType;
-
 	mSpeed = 0;
+	mDirection = HORIZONTAL;
+	mStart = x;
+	mEnd = x;
+	
+	mMoving = false;
 }
 
-void Platform::render(SDL_Rect& camera)
-{
+void Platform::render(SDL_Rect& camera) {
 	mPlatformTexture->render(mBox.x - camera.x, mBox.y - camera.y);
 }
 
-void Platform::setMotion(int start, int end, int direction, int speed) {
+void Platform::setMotion(int start, int end, int direction, int speed, bool moving) 
+{
+	mSpeed = speed;
+	mDirection = direction;
+	
 	mStart = start;
 	mEnd = end;
-	mDirection = direction;
-	mSpeed = speed;
+
+	mMoving = moving;
 }
 
 void Platform::updatePosition() 
 {
+	if (!mMoving) {
+		return;
+	}
+
 	if (mDirection == HORIZONTAL) {
 		mBox.x += mSpeed;
 		if (mBox.x < mStart) {
@@ -57,17 +63,29 @@ void Platform::updatePosition()
 	}
 }
 
-int Platform::getType()
-{
+void Platform::toggle() {
+	mMoving = !mMoving;
+}
+
+string Platform::getId() {
+	return mId;
+}
+
+int Platform::getType() {
 	return mType;
 }
 
-SDL_Rect Platform::getBox()
-{
+SDL_Rect Platform::getBox() {
 	return mBox;
 }
 
-int Platform::getSpeed() {
+int Platform::getSpeed(int direction) {
+	if (!mMoving) {
+		return 0;
+	}
+	else if (direction != mDirection) {
+		return 0;
+	}
 	return mSpeed;
 }
 

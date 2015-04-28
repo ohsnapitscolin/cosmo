@@ -1,39 +1,48 @@
 #ifndef OBJECT_H_DEFINED
 #define OBJECT_H_DEFINED
 
-#include <SDL.h>
 #include "common.h"
 #include "texture.h"
 
-class Object {
+class Object 
+{
 public:
-	
-	Object();
-	Object(string id, int type, LTexture* Texture, int x, int y);
+	Object(string id, int type, Texture* Texture, int x, int y);
 
 	bool interact();
+	bool overlap(SDL_Rect box);
 
-	void setInteraction(string interaction);
-	string getInteraction();
+	void addInteraction(string interaction);
+	vector<string> getInteractions();
+	
 	string getId();
 
-	bool overlap(SDL_Rect mBox);
 	void render(int x, int y);
 	void renderSprite(int x, int y);
-	int getType();
+	
 	void setVisible(bool visible);
+	void toggleVisible();
+
+	int getType();
+
+	void setFixed(bool fixed);
+	bool isFixed();
+
 	SDL_Rect getBox();
 
 private:
 	int mFrames;
-	LTexture* mTexture;
 	int mType;
+
+	Texture* mTexture;
+
 	SDL_Rect mBox;
 
 	string mId;
-
-	string mInteraction;
+	vector<string> mInteractions;
 
 	bool mVisible;
+	bool mFixed;
 };
+
 #endif

@@ -1,5 +1,5 @@
 #include "slope.h"
-#include "common.h"
+
 #include <algorithm>
 
 Slope::Slope(int left, int right, int blockType, int slopeType)
@@ -11,38 +11,39 @@ Slope::Slope(int left, int right, int blockType, int slopeType)
 	mSlopeType = slopeType;
 }
 
-int Slope::getLeft()
-{
+int Slope::getLeft() {
 	return mLeft;
 }
 
-int Slope::getRight()
-{
+int Slope::getRight() {
 	return mRight;
 }
 
-int Slope::getBlockType()
-{
+int Slope::getBlockType() {
 	return mBlockType;
 }
 
-int Slope::getSlopeType()
-{
+int Slope::getSlopeType() {
 	return mSlopeType;
 }
 
 
-bool Slope::ignore(int direction) {
+bool Slope::ignore(int direction) 
+{
 	int slopeDirection = getDirection();
+
 	if (slopeDirection == direction) {
 		return true;
 	}
-	else if (std::abs(mLeft - mRight) < 4) {
+	else if (abs(mLeft - mRight) < 4) {
 		return true;
 	}
+
+	return false;
 }
 
-int Slope::getDirection() {
+int Slope::getDirection() 
+{
 	if (mLeft < mRight) {
 		if (mSlopeType == DOWN) {
 			return RIGHT;
@@ -63,7 +64,7 @@ int Slope::getDirection() {
 
 int Slope::getDistance(int index) 
 {
-	int numLevels = std::abs(mLeft - mRight) + 1;
+	int numLevels = abs(mLeft - mRight) + 1;
 	int pixelsPerLevel = TILE_SIZE / numLevels;
 
 	int distance;

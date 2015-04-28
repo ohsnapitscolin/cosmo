@@ -1,48 +1,44 @@
 #ifndef PLATFORM_H_DEFINED
 #define PLATFORM_H_DEFINED
 
-#include <SDL.h>
+#include "common.h"
 #include "texture.h"
 
 class Platform
 {
 public:
-	//Initializes position and type
-	Platform(int x, int y, int tileType, int PlatformType);
-
-	bool loadMedia();
-
-	void setMotion(int start, int end, int direction, int speed);
+	Platform(string id, int x, int y, int tileType, int platformType);
+	void setMotion(int start, int end, int direction, int speed, bool moving);
 
 	void setAlpha(int alpha);
-
-	//Shows the tile
 	void render(SDL_Rect& camera);
-	
-	//Get the tile type
-	int getType();
 
 	void updatePosition();
+	void toggle();
 
-	//Get the collision box
+	string getId();
+	int getType();
+
 	SDL_Rect getBox();
-	int getSpeed();
+
+	int getSpeed(int direction);
 	int getDirection();
 
 private:
-	//The attributes of the tile
+	int mType;
+	string mId;
+
 	SDL_Rect mBox;
 
-	LTexture* mPlatformTexture;
-
-	//The tile type
-	int mType;
+	Texture* mPlatformTexture;
 
 	int mSpeed;
 	int mDirection;
 	
 	int mStart;
 	int mEnd;
+
+	bool mMoving;
 };
 
 #endif

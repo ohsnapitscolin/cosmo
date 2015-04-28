@@ -3,9 +3,9 @@
 
 #include "common.h"
 #include <stdio.h>
-#include <vector>
 
-class SoundManager {
+class SoundManager 
+{
 public:
 	SoundManager();
 	

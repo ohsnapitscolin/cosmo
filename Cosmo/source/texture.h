@@ -1,80 +1,54 @@
 #ifndef TEXTURE_H_DEFINED
 #define TEXTURE_H_DEFINED
 
-#include <SDL.h>
-#include <SDL_ttf.h>
-#include <SDL_image.h>
-#include <string>
-#include <vector>
+#include "common.h"
 
-//Texture wrapper class
-class LTexture
+class Texture
 {
 public:
-	//Initializes variables
-	LTexture();
+	Texture();
 
-	//Deallocates memory
-	~LTexture();
-
-	//Loads image at specified path
-	bool loadFromFile(std::string path);
-
-#ifdef _SDL_TTF_H
-	//Creates image from font string
-	bool loadFromRenderedText(std::string textureText, SDL_Color textColor);
-#endif
-
-	//Deallocates texture
+	~Texture();
 	void free();
 
-	//Set color modulation
+	bool loadFromFile(string path);
+	bool loadFromRenderedText(TTF_Font* font, string textureText, SDL_Color textColor);
+
+	bool clipSprite(int width, int height);
+
 	void setColor(Uint8 red, Uint8 green, Uint8 blue);
-
-	//Set blending
 	void setBlendMode(SDL_BlendMode blending);
-
-	//Set alpha modulation
 	void setAlpha(Uint8 alpha);
 
-	//Renders texture at given point
 	void render(int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE);
-
-	void clipSprite(int width, int height); 
 	void renderSprite(int x, int y, int currentSprite, bool flip);
 
-	void setOffset(int x, int y);
 	void setScale(int scale);
-
-	int getSpriteCount();
-
-	//Gets image dimensions
+	void setOffset(int x, int y);
+	
 	int getWidth();
 	int getHeight();
-
+	
+	int getSpriteCount();
 	int getSpriteWidth();
 	int getSpriteHeight();
 
-
 private:
-	//The actual hardware texture
 	SDL_Texture* mTexture;
-
-	std::vector<SDL_Rect> mSpriteSheet;
-
-	//Image dimensions
-	int mSpriteCount;
-
-	int mSpriteWidth;
-	int mSpriteHeight;
 
 	int mWidth;
 	int mHeight;
 
+	int mScale;
+
 	int mOffsetX;
 	int mOffsetY;
 
-	int mScale;
+	vector<SDL_Rect> mSpriteSheet;
+
+	int mSpriteCount;
+	int mSpriteWidth;
+	int mSpriteHeight;
 };
 
 #endif

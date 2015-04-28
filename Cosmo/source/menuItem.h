@@ -3,34 +3,36 @@
 
 #include "common.h"
 #include "texture.h"
-#include <string>
 
 class MenuItem
 {
 public:
-	MenuItem(int x, int y, std::string text, SDL_Color color);
+	MenuItem(int x, int y, string text, SDL_Color color, SDL_Color hoverColor);
 	
 	~MenuItem();
 	void free();
 
 	bool loadText();
-	bool updateText(std::string text);
-	bool updateColor(SDL_Color color);
+	bool updateText(string text);
 
 	void render();
 	void render(int x, int y);
-	bool hover(int x, int y);
 
+	bool hover(int x, int y);
 	void setHover(bool hover);
 
 	SDL_Rect getBox();
 
 private:
+	Texture mNormalTexture;
+	Texture mHoverTexture;
+
 	SDL_Rect mItemBox;
-	LTexture mNormalTexture;
-	LTexture mHoverTexture;
-	std::string mText;
+	
+	string mText;
+
 	SDL_Color mColor;
+	SDL_Color mHoverColor;
 
 	bool mHover;
 };

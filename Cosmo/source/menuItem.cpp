@@ -1,12 +1,13 @@
 #include "menuItem.h"
 
-MenuItem::MenuItem(int x, int y, std::string text, SDL_Color color) {
+MenuItem::MenuItem(int x, int y, std::string text, SDL_Color color, SDL_Color hoverColor)
+{
 	mText = text;
 	mColor = color;
+	mHoverColor = hoverColor;
+
 	mItemBox.x = x;
 	mItemBox.y = y;
-	mItemBox.w = 0;
-	mItemBox.h = 0;
 
 	mHover = false;
 }
@@ -15,16 +16,11 @@ MenuItem::~MenuItem() {
 	void free();
 }
 
-bool MenuItem::loadText() {
+bool MenuItem::loadText()
+{
 	bool success = true;
 
-	if (!mNormalTexture.loadFromRenderedText(mText, mColor)) {
-		printf("Failed to load menu item: %s!\n", mText.c_str());
-		success = false;
-	}
-
-	SDL_Color hoverColor = { 175, 175, 175 };
-	if (!mHoverTexture.loadFromRenderedText(mText, hoverColor)) {
+	if (!mNormalTexture.loadFromRenderedText(gFont, mText, mColor)) {
 		printf("Failed to load menu item: %s!\n", mText.c_str());
 		success = false;
 	}
@@ -32,16 +28,17 @@ bool MenuItem::loadText() {
 		mItemBox.w = mNormalTexture.getWidth();
 		mItemBox.h = mNormalTexture.getHeight();
 	}
+
+	if (!mHoverTexture.loadFromRenderedText(gFont, mText, mHoverColor)) {
+		printf("Failed to load menu item: %s!\n", mText.c_str());
+		success = false;
+	}
+
 	return success;
 }
 
-bool MenuItem::updateText(std::string text) {
+bool MenuItem::updateText(string text) {
 	mText = text;
-	return loadText();
-}
-
-bool MenuItem::updateColor(SDL_Color color) {
-	mColor = color;
 	return loadText();
 }
 
@@ -49,7 +46,8 @@ SDL_Rect MenuItem::getBox() {
 	return mItemBox;
 }
 
-void MenuItem::render() {
+void MenuItem::render()
+{
 	if (mHover) {
 		mHoverTexture.render(mItemBox.x, mItemBox.y);
 	}
@@ -58,13 +56,21 @@ void MenuItem::render() {
 	}
 }
 
-void MenuItem::render(int x, int y) {
+void MenuItem::render(int x, int y)
+{
 	mItemBox.x = x;
 	mItemBox.y = y;
-	mNormalTexture.render(mItemBox.x, mItemBox.y);
+
+	if (mHover) {
+		mHoverTexture.render(mItemBox.x, mItemBox.y);
+	}
+	else {
+		mNormalTexture.render(mItemBox.x, mItemBox.y);
+	}
 }
 
-bool MenuItem::hover(int x, int y) {
+bool MenuItem::hover(int x, int y)
+{
 	if (x >= mItemBox.x && x <= mItemBox.x + mItemBox.w &&
 		y >= mItemBox.y && y <= mItemBox.y + mItemBox.h) {
 		return true;
@@ -76,7 +82,8 @@ void MenuItem::setHover(bool hover) {
 	mHover = hover;
 }
 
-void MenuItem::free() {
+void MenuItem::free() 
+{
 	mNormalTexture.free();
 	mHoverTexture.free();
 }

@@ -1,8 +1,6 @@
 #ifndef MENU_H_DEFINED
 #define MENU_H_DEFINED
 
-#include <SDL.h>
-#include <vector>
 #include "texture.h"
 #include "menuItem.h"
 
@@ -10,17 +8,19 @@ class Menu
 {
 public:
 	Menu(std::string textureName);
+	
 	~Menu();
 	void free();
 
 	bool loadMedia();
-	int start();
+	
+	int run();
 
 private:
-	LTexture mMenuTexture;
-	std::vector<MenuItem*> mMenuItems;
+	string mTextureName;
+	Texture mMenuTexture;
 
-	std::string mTextureName;
+	vector<MenuItem*> mMenuItems;
 };
 
 #endif

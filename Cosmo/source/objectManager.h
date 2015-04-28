@@ -38,7 +38,7 @@ private:
 	bool mTriggerWorld;
 	int mWorldOverlap;
 
-	vector<LTexture> mObjectTextures;
+	vector<Texture> mObjectTextures;
 
 	MenuItem* mKeyDisplay;
 };

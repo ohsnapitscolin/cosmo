@@ -1,15 +1,13 @@
 #include "level.h"
-#include "world.h"
-#include "loadManager.h"
-#include <fstream>
+
 #include <algorithm>
+#include <fstream>
 
 Level::Level(int levelNumber) 
 {
 	mLevelNumber = levelNumber;
-	std::string folder = "resources/levels/" + std::to_string(mLevelNumber) + "/";
+	string folder = "resources/new_levels/" + to_string(static_cast<long long>(mLevelNumber)) + "/";
 
-	std::ifstream map(folder + "header.txt");
 	mWorlds[0] = mWorlds[1] = mWorlds[2] = true;
 	
 	fixedX = false;
@@ -18,8 +16,10 @@ Level::Level(int levelNumber)
 	mCharStart.x = 0;
 	mCharStart.y = 0;
 
-	mDeathLine = 0;
+	mDeathLine = NONE;
 
+	ifstream map(folder + "header.txt");
+	
 	if (map) {
 		map >> mStartWorld;
 
@@ -39,8 +39,7 @@ Level::Level(int levelNumber)
 
 		map >> mDeathLine;
 
-		if (map.fail())
-		{
+		if (map.fail()) {
 			printf("Invalid header file for level %d!\n", mLevelNumber);
 		}
 		map.close();
@@ -66,7 +65,8 @@ bool Level::getFixedY() {
 	return fixedY;
 }
 
-void Level::update() {
+void Level::update() 
+{
 	if (mWorld1 != NULL) {
 		mWorld1->update();
 	}
@@ -78,17 +78,14 @@ void Level::update() {
 	}
 }
 
-bool Level::loadMedia(bool renderLoad) {
-
+bool Level::loadMedia() 
+{
 	if (mLoadAttempt) {
 		return mLoadState;
 	}
 
 	bool success = true;
 
-	if (renderLoad) {
-		loadManager.loadScreen(this, 1, mWorld1 != NULL);
-	}
 	if (mWorld1 != NULL) {
 		if (!mWorld1->loadMedia()) {
 			mWorld1 = NULL;
@@ -97,9 +94,6 @@ bool Level::loadMedia(bool renderLoad) {
 		}
 	}
 	
-	if (renderLoad) {
-		loadManager.loadScreen(this, 2, mWorld2 != NULL);
-	}
 	if (mWorld2 != NULL) {
 		if (!mWorld2->loadMedia()) {
 			mWorld2 = NULL;
@@ -108,9 +102,6 @@ bool Level::loadMedia(bool renderLoad) {
 		}
 	}
 	
-	if (renderLoad) {
-		loadManager.loadScreen(this, 3, mWorld3 != NULL);
-	}
 	if (mWorld3 != NULL) {
 		if (!mWorld3->loadMedia()) {
 			mWorld3 = NULL;
@@ -178,8 +169,7 @@ bool Level::loadMedia(bool renderLoad) {
 			mHeight = mWorld3->getHeight();
 		}
 	}
-	else
-	{
+	else {
 		int w1 = mWorld1->getWidth();
 		int w2 = mWorld2->getWidth();
 		int w3 = mWorld3->getWidth();
@@ -197,14 +187,17 @@ bool Level::loadMedia(bool renderLoad) {
 		}
 	}
 
-	if (mDeathLine == 0) {
+	if (mDeathLine == NONE) {
 		mDeathLine = mHeight;
 	}
 
 	mLoadAttempt = true;
 	mLoadState = success;
 
-	printf("LEVEL %d LOADED!\n", mLevelNumber);
+	if (success = true) {
+		printf("LEVEL LOADED!\n");
+	}
+
 	return success;
 }
 
@@ -251,17 +244,14 @@ void Level::unload() {
 
 	printf("Unloading level %d!\n", mLevelNumber);
 
-	//loadManager.loadScreen(this, 1, false);
 	if (mWorld1 != NULL) {
 		mWorld1->unload();
 	}
 
-	//loadManager.loadScreen(this, 2, false);
 	if (mWorld2 != NULL) {
 		mWorld2->unload();
 	}
 	
-	//loadManager.loadScreen(this, 3, false);
 	if (mWorld3 != NULL) {
 		mWorld3->unload();
 	}

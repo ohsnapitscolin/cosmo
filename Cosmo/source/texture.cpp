@@ -1,95 +1,83 @@
 #include "texture.h"
-#include "common.h"
 
-LTexture::LTexture()
+Texture::Texture()
 {
 	mTexture = NULL;
 
 	mWidth = 0;
 	mHeight = 0;
 
+	mScale = 1;
+
 	mOffsetX = 0;
 	mOffsetY = 0;
 
-	mScale = 1;
+	mSpriteCount = 1;
+	mSpriteWidth = mWidth;
+	mSpriteHeight = mHeight;
 }
 
-LTexture::~LTexture()
-{
+Texture::~Texture() {
 	free();
 }
 
-bool LTexture::loadFromFile(std::string path)
+bool Texture::loadFromFile(string path)
 {
-	//Get rid of preexisting texture
 	free();
 
-	//The final texture
 	SDL_Texture* newTexture = NULL;
 
-	//Load image at specified path
 	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
 	if (loadedSurface == NULL) {
 		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
 	}
 	else {
-		//Color key image
 		SDL_SetColorKey(loadedSurface, SDL_TRUE, SDL_MapRGB(loadedSurface->format, 0, 0xFF, 0xFF));
 
-		//Create texture from surface pixels
 		newTexture = SDL_CreateTextureFromSurface(gRenderer, loadedSurface);
 		if (newTexture == NULL) {
 			printf("Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
 		}
 		else {
-			//Get image dimensions
 			mWidth = loadedSurface->w;
 			mHeight = loadedSurface->h;
 		}
 
-		//Get rid of old loaded surface
 		SDL_FreeSurface(loadedSurface);
 	}
 
-	//Return success
 	mTexture = newTexture;
 	return mTexture != NULL;
 }
 
-#ifdef _SDL_TTF_H
-bool LTexture::loadFromRenderedText(std::string textureText, SDL_Color textColor)
+bool Texture::loadFromRenderedText(TTF_Font* font, string textureText, SDL_Color textColor)
 {
-	//Get rid of preexisting texture
 	free();
 
-	//Render text surface
-	SDL_Surface* textSurface = TTF_RenderText_Solid(gFont, textureText.c_str(), textColor);
+	SDL_Surface* textSurface = TTF_RenderText_Solid(font, textureText.c_str(), textColor);
 	if (textSurface != NULL) {
-		//Create texture from surface pixels
 		mTexture = SDL_CreateTextureFromSurface(gRenderer, textSurface);
 		if (mTexture == NULL) {
 			printf("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
 		}
 		else {
-			//Get image dimensions
 			mWidth = textSurface->w;
 			mHeight = textSurface->h;
 		}
 
-		//Get rid of old surface
 		SDL_FreeSurface(textSurface);
 	}
 	else {
 		printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
 	}
 
-	//Return success
 	return mTexture != NULL;
 }
-#endif
 
-void LTexture::clipSprite(int width, int height)
+bool Texture::clipSprite(int width, int height)
 {
+	bool success = true;
+
 	int totalRows = mHeight / height;
 	int totalColumns = mWidth / width;
 	mSpriteCount = totalRows * totalColumns;
@@ -101,6 +89,12 @@ void LTexture::clipSprite(int width, int height)
 		int currentColumn = 0;
 		for (int j = 0; j < mWidth; j += width) {
 			int currentSprite = currentRow * totalColumns + currentColumn;
+
+			if (currentSprite < 0 || currentSprite >= mSpriteCount) {
+				printf("Unable to clip sprite!\n");
+				return false;
+			}
+
 			mSpriteSheet[currentSprite].x = j;
 			mSpriteSheet[currentSprite].y = i;
 			mSpriteSheet[currentSprite].w = width;
@@ -112,67 +106,65 @@ void LTexture::clipSprite(int width, int height)
 
 	mSpriteHeight = height;
 	mSpriteWidth = width;
+
+	return success;
 }
 
-void LTexture::setOffset(int x, int y)
+void Texture::setOffset(int x, int y)
 {
 	mOffsetX = x;
 	mOffsetY = y;
 }
 
-void LTexture::setScale(int scale) {
+void Texture::setScale(int scale) {
 	mScale = scale;
 }
 
-void LTexture::setBlendMode(SDL_BlendMode blending) {
+void Texture::setBlendMode(SDL_BlendMode blending) {
 	SDL_SetTextureBlendMode(mTexture, blending);
 }
 
-void LTexture::setAlpha(Uint8 alpha) {
+void Texture::setAlpha(Uint8 alpha) {
 	SDL_SetTextureAlphaMod(mTexture, alpha);
 }
 
-void LTexture::setColor(Uint8 red, Uint8 green, Uint8 blue) {
+void Texture::setColor(Uint8 red, Uint8 green, Uint8 blue) {
 	SDL_SetTextureColorMod(mTexture, red, green, blue);
 }
 
-int LTexture::getWidth() {
+int Texture::getWidth() {
 	return mWidth;
 }
 
-int LTexture::getHeight() {
+int Texture::getHeight() {
 	return mHeight;
 }
 
-int LTexture::getSpriteWidth() {
+int Texture::getSpriteWidth() {
 	return mSpriteWidth;
 }
 
-int LTexture::getSpriteHeight() {
+int Texture::getSpriteHeight() {
 	return mSpriteHeight;
 }
 
-int LTexture::getSpriteCount() {
+int Texture::getSpriteCount() {
 	return mSpriteCount;
 }
 
-void LTexture::render(int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip)
+void Texture::render(int x, int y, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip)
 {
-	//Set rendering space and render to screen
-	SDL_Rect renderQuad = { mOffsetX + x, mOffsetY + y, mWidth * mScale, mHeight * mScale };
+	SDL_Rect destination = { mOffsetX + x, mOffsetY + y, mWidth * mScale, mHeight * mScale };
 
-	//Set clip rendering dimensions
-	if (clip != NULL)
-	{
-		renderQuad.w = clip->w;
-		renderQuad.h = clip->h;
+	if (clip != NULL) {
+		destination.w = clip->w;
+		destination.h = clip->h;
 	}
 
-	//Render to screen
-	SDL_RenderCopyEx(gRenderer, mTexture, clip, &renderQuad, angle, center, flip);
+	SDL_RenderCopyEx(gRenderer, mTexture, clip, &destination, angle, center, flip);
 }
 
-void LTexture::renderSprite(int x, int y, int currentSprite, bool flip)
+void Texture::renderSprite(int x, int y, int currentSprite, bool flip)
 {
 	SDL_Point center = { x + mSpriteWidth / 2, y + mSpriteHeight / 2 };
 	SDL_RendererFlip flipType = SDL_FLIP_NONE;
@@ -180,16 +172,15 @@ void LTexture::renderSprite(int x, int y, int currentSprite, bool flip)
 		flipType = SDL_FLIP_HORIZONTAL;
 	}
 
-	if (currentSprite >= int(mSpriteSheet.size())) {
+	if (currentSprite >= int(mSpriteSheet.size()) || currentSprite < 0) {
 		currentSprite = 0;
 	}
 
 	render(x, y, &mSpriteSheet[currentSprite], 0, &center, flipType);
 }
 
-void LTexture::free()
+void Texture::free()
 {
-	//Free texture if it exists
 	if (mTexture != NULL)
 	{
 		SDL_DestroyTexture(mTexture);
@@ -198,6 +189,3 @@ void LTexture::free()
 		mHeight = 0;
 	}
 }
-
-
-

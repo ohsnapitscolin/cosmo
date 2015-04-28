@@ -1,41 +1,44 @@
 #include "character.h"
+
 #include <algorithm>
-#include "common.h"
-#include "collision.h"
-#include "tileset.h"
-#include "platformset.h"
-#include "level.h"
-#include "world.h"
-#include "loadManager.h"
-#include "doorManager.h"
-#include "objectManager.h"
-#include "soundManager.h"
 #include <fstream>
 
-float JUMP_FORCE = 13.5f;
+#include "common.h"
+#include "doorManager.h"
+#include "level.h"
+#include "loadManager.h"
+#include "objectManager.h"
+#include "platformset.h"
+#include "soundManager.h"
+#include "tileset.h"
+#include "world.h"
+
+const float JUMP_FORCE = 13.5f;
 const float CHAR_VEL = 5.0;
 const float CLIMB_VEL = 3.0f;
-const float aX = 0.5f;
-const float jumpX = 0.05f;
+const float CHAR_ACC = 0.5f;
+const float JUMP_ACC = 0.05f;
 
-int oldWorld = 1;
+const int CHAR_WIDTH = 32;
+const int CHAR_HEIGHT = 96;
 
-Character::Character(int type) {
+int prevWorldIndex = 1;
 
-	//Initialize the collision box
+Character::Character(int type) 
+{
+	mType = type;
+
 	mBox.x = 100;
 	mBox.y = 0;
-	mBox.w = 32;
-	mBox.h = 96;
+	mBox.w = CHAR_WIDTH;
+	mBox.h = CHAR_HEIGHT;
 
-	//Initialize the velocity
-	mVelX = 0.0;
-	mVelY = 0.0;
+	mVelX = 0.0f;
+	mVelY = 0.0f;
+	mTargetSpeedX = 0.0f;
 
-	//Initialize the sprites
 	mFrame = 0;
 
-	//Initial the sprite location
 	mLadderOverlap = false;
 	mLadderBelow = false;
 	
@@ -44,105 +47,27 @@ Character::Character(int type) {
 	mIdleJump = false;
 	mInAir = false;
 
-	mCurrentPlatform = NONE;
+	mCurrentPlatform = NULL;
 	currentDirection = RIGHT;
-
-	mType = type;
 }
 
 
-void Character::loadMedia() {
+bool Character::loadMedia() {
 	mTextures = loadManager.getSprite(mType);
+	if (mTextures.empty()) {
+		return false;
+	}
+	return true;
 }
 
-/*void Character::handleEvent(SDL_Event& e)
-{
-	if (currentWorldIndex != oldWorld) {
-		mCurrentPlatform = NONE;
-	}
-
-	//If a key was pressed
-	if (e.type == SDL_KEYDOWN && e.key.repeat == 0)
-	{
-		//Adjust the velocity
-		switch (e.key.keysym.sym)
-		{
-		case SDLK_UP:
-			objectManager.interact(mBox, currentLevel->getLevelNumber(), currentWorldIndex, true);			
-			doorManager.interact(mBox, currentLevel->getLevelNumber(), currentWorldIndex, true);
-			if (mDoorOverlap != NONE) {
-				mTriggerLoad = true;
-			}
-			if (mCharState != CLIMBING && mLadderOverlap) {
-				mCharState = CLIMBING;
-				mVelY = -1 * CLIMB_VEL;
-				break;
-			}
-			if (mCharState == CLIMBING) {
-				mVelY -= CLIMB_VEL;
-				break;
-			}
-			break;
-		case SDLK_SPACE:
-			if (mCharState == STANDING || mCharState == CLIMBING) {
-				mVelY = -1 * JUMP_FORCE;
-				mCharState = JUMPING;
-				soundManager.playSound(0);
-			}
-			break;
-		case SDLK_DOWN: 
-			if (mCharState != CLIMBING && (mLadderOverlap || mLadderBelow)) {
-				mCharState = CLIMBING;
-				mVelY = CLIMB_VEL;
-			}
-			else {
-				mVelY += CLIMB_VEL;
-			}
-			break;
-		case SDLK_LEFT:
-			currentDirection = LEFT;
-			mVelX -= CHAR_VEL;
-			break;
-		case SDLK_RIGHT: 
-			currentDirection = RIGHT;
-			mVelX += CHAR_VEL;
-			break;
-		}
-	}
-	//If a key was released
-	else if (e.type == SDL_KEYUP && e.key.repeat == 0)
-	{
-		//Adjust the velocity
-		switch (e.key.keysym.sym)
-		{
-		case SDLK_UP:
-			if (mCharState == CLIMBING) {
-				mVelY += CLIMB_VEL;
-			}
-			break;
-		case SDLK_LEFT: 
-			mVelX += CHAR_VEL; 
-			break;
-		case SDLK_RIGHT: 
-			mVelX -= CHAR_VEL; 
-			break;
-		case SDLK_DOWN:
-			if (mCharState == CLIMBING) {
-				mVelY -= CLIMB_VEL;
-			}
-			break;
-		}
-	}
-}*/
 
 void Character::handleEvent(SDL_Event& e)
 {
-	if (currentWorldIndex != oldWorld) {
-		mCurrentPlatform = NONE;
+	if (currentWorldIndex != prevWorldIndex) {
+		mCurrentPlatform = NULL;
 	}
 
-	if (e.type == SDL_KEYDOWN && e.key.repeat == 0)
-	{
+	if (e.type == SDL_KEYDOWN && e.key.repeat == 0) {
 		switch (e.key.keysym.sym)
 		{
 		case SDLK_UP:
@@ -150,9 +75,9 @@ void Character::handleEvent(SDL_Event& e)
 			doorManager.interact(mBox, currentLevel->getLevelNumber(), currentWorldIndex, true);
 			break;
 		case SDLK_SPACE:
-			if (mCharState == STANDING || mCharState == CLIMBING) {
+			if (mCurrentState == STANDING || mCurrentState == CLIMBING) {
 				mVelY = -1 * JUMP_FORCE;
-				mCharState = JUMPING;
+				mCurrentState = JUMPING;
 				soundManager.playSound(0);
 			}
 			break;
@@ -162,25 +87,25 @@ void Character::handleEvent(SDL_Event& e)
 	const Uint8* currentKeyStates = SDL_GetKeyboardState(NULL);
 
 	if (currentKeyStates[SDL_SCANCODE_UP]) {
-		if (mCharState != CLIMBING && mLadderOverlap) {
-			mCharState = CLIMBING;
+		if (mCurrentState != CLIMBING && mLadderOverlap) {
+			mCurrentState = CLIMBING;
 			mVelY = 0.0f;
 		}
-		if (mCharState == CLIMBING) {
-			mVelY = -3.0f;
+		if (mCurrentState == CLIMBING) {
+			mVelY = -CLIMB_VEL;
 		}
 	}
 	else if (currentKeyStates[SDL_SCANCODE_DOWN]) {
-		if (mCharState != CLIMBING && (mLadderBelow)) {
-			mCharState = CLIMBING;
+		if (mCurrentState != CLIMBING && (mLadderBelow)) {
+			mCurrentState = CLIMBING;
 			mVelY = 0.0f;
 		}
-		if (mCharState == CLIMBING) {
-			mVelY = 3.0f;
+		if (mCurrentState == CLIMBING) {
+			mVelY = CLIMB_VEL;
 		}
 	}
 	else {
-		if (mCharState == CLIMBING) {
+		if (mCurrentState == CLIMBING) {
 			mVelY = 0.0f;
 		}
 	}
@@ -188,15 +113,15 @@ void Character::handleEvent(SDL_Event& e)
 	if (currentKeyStates[SDL_SCANCODE_LEFT]) {
 		currentDirection = LEFT;
 		mTargetSpeedX = -1 * CHAR_VEL;
-		if (mCharState == CLIMBING) {
-			mTargetSpeedX = -2.0f;
+		if (mCurrentState == CLIMBING) {
+			mTargetSpeedX = -CLIMB_VEL;
 		}
 	}
 	else if (currentKeyStates[SDL_SCANCODE_RIGHT]) {
 		currentDirection = RIGHT;
 		mTargetSpeedX = CHAR_VEL;
-		if (mCharState == CLIMBING) {
-			mTargetSpeedX = 2.0f;
+		if (mCurrentState == CLIMBING) {
+			mTargetSpeedX = CLIMB_VEL;
 		}
 	}
 	else {
@@ -209,23 +134,21 @@ void Character::move(SDL_Rect& camera)
 	updateCharSpeed();
 
 	World* currentWorld = currentLevel->getWorld(currentWorldIndex);
-	TileSet* currentTileSet = currentWorld->getTileSet();
+
 	PlatformSet* currentPlatforms = currentWorld->getPlatformSet();
+	TileSet* currentTileSet = currentWorld->getTileSet();
 	
 	mLadderBelow = false;
 	mLadderOverlap = false;
 
 	//apply gravity
-	if (mCharState != CLIMBING) {
+	if (mCurrentState != CLIMBING) {
 		if (mVelY < TERMINAL) {
 			mVelY += GRAVITY;
 		}
 		else {
 			mVelY = TERMINAL;
 		}
-	}
-	else {
-		mCurrentPlatform = NONE;
 	}
 
 	//break velocity into direction and magnitude
@@ -239,35 +162,26 @@ void Character::move(SDL_Rect& camera)
 	//**************************************** HORIZONTAL MOVEMENT ****************************************//
 
 	int deltaX = magVelX;
+	
+	//what type of collision? currently unused
+	int typeX = NONE;
+	int distanceX = magVelX;
 
-	//update x position, no horizontal movement is allowed while climbing
-	//if (mCharState != CLIMBING) {
-		int distanceX = magVelX;
-		int typeX = NONE;
-		if (currentTileSet->findStaticCollisions(mBox, dirVelX, distanceX, typeX)) {
-			deltaX = distanceX;
-		}
-
-		deltaX = objectManager.findStaticCollisions(mBox, currentLevel->getLevelNumber(), currentWorldIndex, deltaX, dirVelX);
-
-		if (dirVelX == LEFT) {
-			mBox.x -= deltaX;
-		}
-		else if (dirVelX == RIGHT) {
-			mBox.x += deltaX;
-		}
-	//}
-
-	if (mCurrentPlatform != NONE) {
-		if (mCharState == STANDING) {
-			mBox.x += currentPlatforms->getSpeed(mCurrentPlatform, 0);
-		}
-		if (mCharState != STANDING) {
-			mCurrentPlatform = NONE;
-		}
+	//updates distanceX
+	if (currentTileSet->findStaticCollisions(mBox, dirVelX, distanceX, typeX)) {
+		deltaX = distanceX;
 	}
 
-	//ensure character is not out of level bounds 
+	deltaX = objectManager.findStaticCollisions(mBox, currentLevel->getLevelNumber(), currentWorldIndex, deltaX, dirVelX);
+
+	if (dirVelX == LEFT) {
+		mBox.x -= deltaX;
+	}
+	else if (dirVelX == RIGHT) {
+		mBox.x += deltaX;
+	}
+	
+	//keep character in level bounds 
 	if (mBox.x < 0) {
 		mBox.x = 0;
 	}
@@ -278,63 +192,58 @@ void Character::move(SDL_Rect& camera)
 	//**************************************** VERTCIAL MOVEMENT ****************************************//
 	int deltaY = magVelY;
 	
-	if (mCharState != CLIMBING) {
+	if (mCurrentState != CLIMBING) {
 		if (dirVelY == UP && deltaY >= 0) {
-			mCharState = JUMPING;
+			mCurrentState = JUMPING;
 		}
 		else if ((dirVelY == DOWN && deltaY >= 0) || dirVelY == NONE) {
-			mCharState = FALLING;
+			mCurrentState = FALLING;
 		}
 		else {
-			mCharState = STANDING;
+			mCurrentState = STANDING;
 		}
 	}
 
-	if (mCharState != CLIMBING) {
-		
-		int distanceY = magVelY;
+	if (mCurrentState != CLIMBING) {
+
+		//what type of collision? currently unused
 		int typeY = NONE;
+		int distanceY = magVelY;
 		
+		//updates distanceY
 		if (currentTileSet->findStaticCollisions(mBox, dirVelY, distanceY, typeY)) {
-			//if (typeY != NONE) {
-				if (dirVelY == DOWN) {
-					mCharState = STANDING;
-				}
-				if (dirVelY == UP) {
-					mVelY = 0;
-				}
-			//}
 			deltaY = distanceY;
-		}
-
-		int index = NONE;
-
-		if (!currentPlatforms->findPlatformCollisions(mBox, dirVelY, distanceY, index)) {
-			mCurrentPlatform = NONE;
-		};
-		
-		if (index != NONE) {
 			if (dirVelY == DOWN) {
-				mCurrentPlatform = index;
-				mCharState = STANDING;
+				mCurrentState = STANDING;
 			}
-			deltaY = distanceY;
+			if (dirVelY == UP) {
+				mVelY = 0;
+			}
 		}
 
+		//updates distanceY
+		mCurrentPlatform = currentPlatforms->findPlatformCollisions(mBox, dirVelY, distanceY);
 		
-		int new_deltaY = objectManager.findStaticCollisions(mBox, currentLevel->getLevelNumber(), currentWorldIndex, deltaY, dirVelY);
-		if (deltaY != new_deltaY && new_deltaY == 0) {
-			mCharState = STANDING;
+		if (mCurrentPlatform != NULL) {
+			deltaY = distanceY;
+			if (dirVelY == DOWN) {
+				mCurrentState = STANDING;
+			}
 		}
-		deltaY = new_deltaY;
+
+		distanceY = objectManager.findStaticCollisions(mBox, currentLevel->getLevelNumber(), currentWorldIndex, deltaY, dirVelY);
+		if (deltaY != distanceY && distanceY == 0) {
+			deltaY = distanceY;
+			mCurrentState = STANDING;
+		}
 	}
 	
-	if (mCurrentPlatform != NONE) {
-		if (mCharState == STANDING) {
-			mBox.y += currentPlatforms->getSpeed(mCurrentPlatform, 1);
+	if (mCurrentPlatform != NULL) {
+		if (mCurrentState == STANDING) {
+			mBox.y += mCurrentPlatform->getSpeed(VERTICAL);
 		}
-		if (mCharState != STANDING) {
-			mCurrentPlatform = NONE;
+		if (mCurrentState != STANDING) {
+			mCurrentPlatform = NULL;
 		}
 	}
 
@@ -345,36 +254,41 @@ void Character::move(SDL_Rect& camera)
 		mBox.y += deltaY;
 	}
 
-	//ensure character is not out of level bounds 
+	//keep character in level bounds, unused 
 	/*if (mBox.y < 0) {
 		mBox.y = 0;
 	}
 	if (mBox.y + mBox.h > currentLevel->getHeight()) {
 		mBox.y = currentLevel->getHeight() - mBox.h;
-	}**/
+	}*/
 
 	checkForOverlaps();
 	saveState();
+
+	prevWorldIndex = currentWorldIndex;
 }
 
+void Character::updateCharSpeed()
+{
+	float threshold = 0.3f;
 
-void Character::loadState() {
-	ifstream load("resources/characters/save.txt");
-	int levelIndex, currentWorld, x, y;
-	load >> levelIndex;
-	load >> currentWorld;
-	load >> x;
-	load >> y;
-
-	if (levelIndex != currentLevel->getLevelNumber()) {
-		SDL_Point charPos = currentLevel->getCharacterStart();
-		mBox.x = charPos.x;
-		mBox.y = charPos.y;
+	float acceleration = CHAR_ACC;
+	if (mCurrentState == JUMPING || mCurrentState == FALLING) {
+		if (abs(mVelX) > 0.0) {
+			acceleration = JUMP_ACC;
+		}
 	}
-	else {
-		currentWorldIndex = currentWorld;
-		mBox.x = x;
-		mBox.y = y;
+
+	float targetSpeed = mTargetSpeedX;
+	if (mCurrentPlatform != NULL) {
+		if (mCurrentState == STANDING) {
+			targetSpeed += (float) mCurrentPlatform->getSpeed(HORIZONTAL);
+		}
+	}
+	mVelX = acceleration * targetSpeed + (1 - acceleration) * mVelX;
+
+	if (abs(mVelX) <= threshold) {
+		mVelX = 0.0f;
 	}
 }
 
@@ -392,7 +306,7 @@ void Character::checkForOverlaps()
 		Tile* currentTile = overlapTiles[i];
 		if (currentTile->getType() == 30) {
 			mLadderOverlap = true;
-			if (mCharState == CLIMBING) {
+			if (mCurrentState == CLIMBING) {
 				SDL_Rect box = currentTile->getBox();
 				//center character on ladder;
 				mBox.x = box.x + box.w / 2 - mBox.w / 2;
@@ -404,12 +318,13 @@ void Character::checkForOverlaps()
 		}
 	}
 
-	if (mCharState == CLIMBING && !mLadderOverlap) {
-		mCharState = STANDING;
+	if (mCurrentState == CLIMBING && !mLadderOverlap) {
+		mCurrentState = STANDING;
 	}
 
 	overlapTiles.clear();
 
+	//check tiles immediately below character
 	SDL_Rect underBox;
 	underBox.x = mBox.x;
 	underBox.y = mBox.y + mBox.h;
@@ -426,24 +341,22 @@ void Character::checkForOverlaps()
 	}
 
 	if (!mLadderBelow) {
-		if (mCharState == CLIMBING && dirVelY == DOWN) {
-			mCharState = FALLING;
+		if (mCurrentState == CLIMBING && dirVelY == DOWN) {
+			mCurrentState = FALLING;
 		}
 	}
 
 	overlapTiles.clear();
-
-	oldWorld = currentWorldIndex;
 }
 
 
 void Character::setCamera(SDL_Rect& camera)
 {
-	//Center the camera over the character
+	//center the camera over the character
 	camera.x = (mBox.x + mBox.w / 2) - SCREEN_WIDTH / 2;
 	camera.y = (mBox.y + mBox.h / 2) - SCREEN_HEIGHT / 2;
 
-	//Keep the camera in bounds
+	//keep the camera in bounds
 	if (camera.x < 0) {	
 		camera.x = 0;
 	}
@@ -460,69 +373,75 @@ void Character::setCamera(SDL_Rect& camera)
 
 void Character::render(SDL_Rect& camera)
 {
-	if (mFrame >= INT_MAX || mPrevState != mCharState) {
+	if (mFrame >= INT_MAX || mPrevState != mCurrentState) {
 		mFrame = 0;
 	}
 
 	int x = mBox.x - camera.x;
 	int y = mBox.y - camera.y;
 
-	int currentAnimation = 0;
 	int currentSprite = 0;
+	int spriteIndex = 0;
 
 	int speed = 4;
 	bool updateFrame = false;
 
-	if (mCharState != JUMPING) {
+	if (mCurrentState != JUMPING) {
 		mIdleJump = false;
 	}
 
-	if (mCharState == JUMPING) {
+	if (mCurrentState == JUMPING) {
 		mInAir = true;
-		currentAnimation = JUMP;
-		if (!mIdleJump && sheetComplete(currentAnimation, speed)) {
+		currentSprite = JUMP;
+		if (!mIdleJump && sheetComplete(currentSprite, speed)) {
 			mIdleJump = true;
 		}
 		if (mIdleJump) {
-			currentAnimation = IDLE;
+			currentSprite = IDLE;
 		}
 		updateFrame = true;
 	}
 
-	if (mCharState == STANDING) {
+	if (mCurrentState == STANDING) {
 		if (mInAir) {
-			currentAnimation = LAND;
-			if (sheetComplete(currentAnimation, speed)) {
+			currentSprite = LAND;
+			if (sheetComplete(currentSprite, speed)) {
 				mInAir = false;
 			}
 			updateFrame = true;
 		}
 		else {
-			currentAnimation = WALK;
-			if (mVelX != 0) {
+			currentSprite = WALK;
+			if (mCurrentPlatform != NULL) {
+				if (mVelX != mCurrentPlatform->getSpeed(0)) {
+					speed = 5;
+					updateFrame = true;
+				}
+			}
+			else if (mVelX != 0) {
 				speed = 5;
 				updateFrame = true;
 			}
 		}
 	}
 
-	if (mCharState == CLIMBING) {
-		currentAnimation = CLIMB;
+	if (mCurrentState == CLIMBING) {
+		currentSprite = CLIMB;
 		if (mVelY != 0) {
 			speed = 8;
 			updateFrame = true;
 		}
 	}
 
-	if (mCharState == FALLING) {
+	if (mCurrentState == FALLING) {
 		mInAir = true;
 		speed = 6;
-		currentAnimation = FALL;
+		currentSprite = FALL;
 		updateFrame = true;
 	}
 
 	if (updateFrame) {
-		currentSprite = mFrame / speed % mTextures[currentAnimation]->getSpriteCount();
+		spriteIndex = mFrame / speed % mTextures[currentSprite]->getSpriteCount();
 	}
 	
 	bool flip = false;
@@ -530,16 +449,15 @@ void Character::render(SDL_Rect& camera)
 		flip = true;
 	}
 
-	mTextures[currentAnimation]->renderSprite(x, y, currentSprite, flip);
+	mTextures[currentSprite]->renderSprite(x, y, spriteIndex, flip);
 	mFrame++;
 
-	mPrevState = mCharState;
+	mPrevState = mCurrentState;
 }
 
 
-bool Character::sheetComplete(int currentAnimation, int speed) 
-{
-	return mFrame / speed >= mTextures[currentAnimation]->getSpriteCount();
+bool Character::sheetComplete(int currentSprite, int speed) {
+	return mFrame / speed >= mTextures[currentSprite]->getSpriteCount();
 }
 
 void Character::setPosition(int x, int y) {
@@ -547,28 +465,62 @@ void Character::setPosition(int x, int y) {
 	mBox.y = y;
 }
 
-void Character::saveState() {
-	if (mCharState == STANDING) {
-		ofstream save("resources/characters/save.txt", std::ios::out | std::ios::trunc);
-		save << currentLevel->getLevelNumber();
-		save << ' ';
-		save << currentWorldIndex;
-		save << ' ';
-		save << mBox.x;
-		save << ' ';
-		save << mBox.y;
-		save << '\n';
+bool Character::loadState() 
+{
+	bool success = true;
+
+	ifstream load("resources/characters/save.txt");
+	
+	if (!load) {
+		printf("Unable to load character position!\n");
+		success = false;
 	}
+	else {
+		int levelIndex, currentWorld, x, y;
+		load >> levelIndex;
+		load >> currentWorld;
+		load >> x;
+		load >> y;
+	
+		if (levelIndex != currentLevel->getLevelNumber()) {
+			SDL_Point charPosition = currentLevel->getCharacterStart();
+			mBox.x = charPosition.x;
+			mBox.y = charPosition.y;
+		}
+		else {
+			currentWorldIndex = currentWorld;
+			mBox.x = x;
+			mBox.y = y;
+		}
+	}
+	return success;
+}
+
+bool Character::saveState() 
+{
+	bool success = true;
+
+	if (mCurrentState == STANDING && mCurrentPlatform == NULL) {
+		ofstream save("resources/characters/save.txt", std::ios::out | std::ios::trunc);
+
+		if (!save) {
+			printf("Unable to save character state!\n");
+			success = false;
+		}
+		else {
+			save << currentLevel->getLevelNumber() << ' ';
+			save << currentWorldIndex << ' ';
+			save << mBox.x << ' ';
+			save << mBox.y << '\n';
+		}
+	}
+	return success;
 }
 
 void Character::setAlpha(int alpha) {
 	for (int i = 0; i < int(mTextures.size()); i++) {
 		mTextures[i]->setAlpha(alpha);
 	}
-}
-
-SDL_Rect Character::getBox() {
-	return mBox;
 }
 
 bool Character::checkForOverlap(int worldIndex) 
@@ -598,26 +550,13 @@ bool Character::checkForOverlap(int worldIndex)
 	return false;
 }
 
+SDL_Rect Character::getBox() {
+	return mBox;
+}
+
 SDL_Point Character::getPosition() {
 	SDL_Point charPos;
 	charPos.x = mBox.x;
 	charPos.y = mBox.y;
 	return charPos;
-}
-
-void Character::updateCharSpeed() 
-{
-	float threshold = 0.3f;
-
-	float acceleration = aX;
-	if (mCharState == JUMPING || mCharState == FALLING) {
-		if (abs(mVelX) > 0.0) {
-			acceleration = jumpX;
-		}
-	}
-	
-	mVelX = acceleration * mTargetSpeedX + (1 - acceleration) * mVelX;
-	if (abs(mVelX) <= threshold) {
-		mVelX = 0.0f;
-	}
 }

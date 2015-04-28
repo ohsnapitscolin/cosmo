@@ -1,13 +1,9 @@
 #include "soundManager.h"
-#include <string>
 #include <fstream>
 
-SoundManager::SoundManager() 
-{
-};
+SoundManager::SoundManager() {};
 
-SoundManager::~SoundManager() 
-{
+SoundManager::~SoundManager() {
 	void free();
 }
 
@@ -31,9 +27,14 @@ bool SoundManager::loadMedia()
 			string soundName;
 			map >> soundName;
 
+			if (map.fail()) {
+				printf("Unable to read sound header!\n");
+				success = false;
+				break;
+			}
+
 			mSounds[i] = Mix_LoadWAV(("resources/sounds/" + soundName).c_str());
-			if (mSounds[i] == NULL)
-			{
+			if (mSounds[i] == NULL) {
 				printf("Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError());
 				return false;
 			}
@@ -48,6 +49,12 @@ bool SoundManager::loadMedia()
 			string musicName;
 			map >> musicName;;
 
+			if (map.fail()) {
+				printf("Unable to read sound header!\n");
+				success = false;
+				break;
+			}
+
 			mMusic[i] = Mix_LoadMUS(("resources/sounds/" + musicName).c_str());
 			if (mMusic[i] == NULL)
 			{
@@ -56,6 +63,9 @@ bool SoundManager::loadMedia()
 			}
 		}
 	}
+
+	map.close();
+
 	return success;
 }
 
@@ -77,9 +87,9 @@ void SoundManager::playMusic(int music)
 
 void SoundManager::pauseMusic() 
 {
-	//If there is music playing
+	//if there is music playing
 	if (Mix_PlayingMusic() != 0) {
-		//If the music is not paused
+		//if the music is not paused
 		if (Mix_PausedMusic() == 0) {
 			Mix_PauseMusic();
 		}
@@ -88,9 +98,9 @@ void SoundManager::pauseMusic()
 
 void SoundManager::resumeMusic() 
 {
-	//If there is music playing
+	//if there is music playing
 	if (Mix_PlayingMusic() != 0) {
-		//If the music is paused
+		//if the music is paused
 		if (Mix_PausedMusic() != 0) {
 			Mix_ResumeMusic();
 		}

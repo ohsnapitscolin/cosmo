@@ -9,15 +9,13 @@ PlatformSet::~PlatformSet() {
 	void free();
 }
 
-bool PlatformSet::loadPlatforms() {
-
-	//Success flag
+bool PlatformSet::loadPlatforms() 
+{
 	bool platformsLoaded = true;
 
 	mPlatforms.resize(0);
 
-	//Open the map
-	std::ifstream map(mFilename);
+	ifstream map(mFilename);
 
 	if (!map) {
 		printf("No platforms available for %s\n", mFilename.c_str());
@@ -29,14 +27,14 @@ bool PlatformSet::loadPlatforms() {
 
 	mPlatforms.resize(mPlatformCount);
 
-	//Initialize the Blocks
 	for (int i = 0; i < mPlatformCount; i++)
 	{
-		//Determines what kind of Block will be made
+		string id;
 		int x, y, tileType, platformType;
 		int start, end, direction, speed;
+		bool moving;
 
-		//Read Block from map file
+		map >> id;
 		map >> tileType;
 		map >> platformType;
 		map >> x;
@@ -46,32 +44,30 @@ bool PlatformSet::loadPlatforms() {
 		map >> end;
 		map >> direction;
 		map >> speed;
+		map >> moving;
 
-		//If the was a problem in reading the map
 		if (map.fail()) {
-			//Stop loading map
 			printf("Error loading map: Unexpected end of file!\n");
 			platformsLoaded = false;
 			break;
 		}
 
-		mPlatforms[i] = new Platform(x, y, tileType, platformType);
-		mPlatforms[i]->setMotion(start, end, direction, speed);
+		mPlatforms[i] = new Platform(id, x, y, tileType, platformType);
+		mPlatforms[i]->setMotion(start, end, direction, speed, moving);
 	}
 
-	//Close the file
 	map.close();
-
-	//If the map was loaded fine
 	return platformsLoaded;
 }
 
-bool PlatformSet::findPlatformCollisions(SDL_Rect box, int direction, int& distance, int& index) {
-
+Platform* PlatformSet::findPlatformCollisions(SDL_Rect box, int direction, int& distance) 
+{
 	int topA = box.y;
 	int bottomA = box.y + box.h;
 	int leftA = box.x;
 	int rightA = box.x + box.w;
+
+	int index = -1;
 
 	for (int i = 0; i < int(mPlatforms.size()); i++)
 	{
@@ -99,36 +95,35 @@ bool PlatformSet::findPlatformCollisions(SDL_Rect box, int direction, int& dista
 	}
 
 	distance--;
-	return index != -1;
-}
 
-int PlatformSet::getSpeed(int index, int direction) {
-	if (direction != mPlatforms[index]->getDirection()) {
-		return 0;
+	if (index == -1) {
+		return NULL;
 	}
-	return mPlatforms[index]->getSpeed();
+	else {
+		return mPlatforms[index];
+	}
 }
 
+vector<Platform*> PlatformSet::getPlatforms() {
+	return mPlatforms;
+}
 
-void PlatformSet::render(SDL_Rect& camera) {
+void PlatformSet::render(SDL_Rect& camera) 
+{
 	for (int i = 0; i < int(mPlatforms.size()); i++) {
 		mPlatforms[i]->render(camera);
 	}
 }
 
-void PlatformSet::setAlpha(int alpha) {
-	/*for (int i = 0; i < int(mPlatforms.size()); i++) {
-		mPlatforms[i]->setAlpha(alpha);
-	}*/
-}
-
-void PlatformSet::update() {
+void PlatformSet::update() 
+{
 	for (int i = 0; i < int(mPlatforms.size()); i++) {
 		mPlatforms[i]->updatePosition();
 	}
 }
 
-void PlatformSet::free() {
+void PlatformSet::free() 
+{
 	for (int i = 0; i < int(mPlatforms.size()); i++) {
 		if (mPlatforms[i] != NULL) {
 			delete mPlatforms[i];

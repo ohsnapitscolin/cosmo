@@ -1,16 +1,16 @@
 #include "tileset.h"
+
 #include <fstream>
 #include <algorithm>
-#include "slope.h"
-#include "loadManager.h"
 
-TileSet::TileSet(std::string mapName) 
-{
+#include "loadManager.h"
+#include "slope.h"
+
+TileSet::TileSet(std::string mapName) {
 	mMapName = mapName;
 }
 
-TileSet::~TileSet() 
-{
+TileSet::~TileSet() {
 	free();
 }
 
@@ -29,42 +29,27 @@ bool TileSet::loadMedia(int width, int height)
 	return success;
 }
 
-int TileSet::getWidth()
-{
+int TileSet::getWidth() {
 	return mTileSetWidth;
 }
 
 
-int TileSet::getHeight()
-{
+int TileSet::getHeight() {
 	return mTileSetHeight;
 }
 
 bool TileSet::setTiles()
 {
-	printf("SET %s\n", mMapName.c_str());
-
-	//Success flag
 	bool tilesLoaded = true;
 
-	mTiles.resize(mTileSetHeight / TILE_SIZE, std::vector<Tile*>(mTileSetWidth / TILE_SIZE));
+	mTiles.resize(mTileSetHeight / TILE_SIZE, vector<Tile*>(mTileSetWidth / TILE_SIZE));
 
-	//Open the map
-	std::ifstream map(mMapName);
+	ifstream map(mMapName);
 
 	int tileCount;
 	map >> tileCount;
 
-	/*for (int i = 0; i < mTileSetHeight / TILE_SIZE; i++) {
-		for (int j = 0; j < mTileSetWidth / TILE_SIZE; j++) {
-			if (mTiles[i][j] != NULL) {
-				printf("WHOA %d %d\n", i, j);
-			}
-		}
-	}*/
-
 	for (int i = 0; i < tileCount; i++) {
-		//determines what kind of tile will be made
 		int x, y, width, height, tileType;
 
 		//read tile box from map file
@@ -385,7 +370,6 @@ void TileSet::findOverlapTiles(SDL_Rect box, vector<Tile*>& overlapTiles)
 	}
 }
 
-/* DEFINITELY OBJECTS BEING LOST WHEN PASSED TO CHARACTER */
 void TileSet::free() 
 {
 	for (int i = 0; i < mTileSetHeight / TILE_SIZE; i++) {

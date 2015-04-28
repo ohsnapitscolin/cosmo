@@ -1,48 +1,40 @@
 #ifndef WINDOW_H_DEFINED
 #define WINDOW_H_DEFINED
 
-class LWindow
+#include "common.h"
+
+class Window
 {
-	public:
-		//Intializes internals
-		LWindow();
+public:
+	Window();
 
-		//Creates window
-		bool init();
+	void free();
 
-		//Creates renderer from internal window
-		SDL_Renderer* createRenderer();
+	bool init();
 
-		//Handles window events
-		void handleEvent( SDL_Event& e );
+	SDL_Renderer* createRenderer();
+
+	void handleEvent(SDL_Event& e);
 	
-		//Deallocates internals
-		void free();
+	int getWidth();
+	int getHeight();
 
-		//Window dimensions
-		int getWidth();
-		int getHeight();
+	bool hasMouseFocus();
+	bool hasKeyboardFocus();
+	bool isMinimized();
 
-		//Window focii
-		bool hasMouseFocus();
-		bool hasKeyboardFocus();
-		bool isMinimized();
+	SDL_Window* getWindow();
 
-		SDL_Window* getWindow();
+private:
+	SDL_Window* mWindow;
 
-	private:
-		//Window data
-		SDL_Window* mWindow;
+	int mWidth;
+	int mHeight;
 
-		//Window dimensions
-		int mWidth;
-		int mHeight;
-
-		//Window focus
-		bool mMouseFocus;
-		bool mKeyboardFocus;
-		bool mFullScreen;
-		bool mMinimized;
+	bool mMouseFocus;
+	bool mKeyboardFocus;
+	bool mFullScreen;
+	bool mMinimized;
 };
 
 #endif
